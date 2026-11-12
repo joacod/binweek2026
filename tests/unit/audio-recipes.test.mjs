@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { validateRecipe } from 'audiobits';
+import { cloudwakeRecipes } from '../../src/game/sound-recipes.ts';
+
+test('flight recipes validate and serialize against the installed AudioBits runtime', () => {
+  for (const [cue, recipe] of Object.entries(cloudwakeRecipes)) {
+    const result = validateRecipe(recipe);
+    assert.equal(result.ok, true, `${cue}: ${JSON.stringify(result.ok ? [] : result.issues)}`);
+    assert.equal(validateRecipe(JSON.parse(JSON.stringify(recipe))).ok, true, cue);
+    assert.equal(recipe.kind, 'one-shot');
+    assert.ok(recipe.layers.length <= 3, `${cue} resource budget`);
+  }
+});

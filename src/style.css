@@ -1,0 +1,2 @@
+html, body, #app { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #102f3a; color: #f8edcf; font-family: system-ui, sans-serif; }
+#app:fullscreen { background: #102f3a; }
