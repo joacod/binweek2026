@@ -25,3 +25,7 @@ pnpm preview
 `check` runs TypeScript, deterministic tests and the production build. The browser check runs against that build and covers required-art retry, startup and pause/resume. `pnpm build` writes the standalone static site to `dist/`. Deploy that directory to a static web host, at the root or a subdirectory. Assets use relative built URLs. No backend, Arcade Lab checkout, or runtime CDN is required.
 
 For future work, see [architecture](docs/architecture.md), [game design](docs/game.md), [artwork contracts](src/game/art/README.md), and the [game adaptation skill](.agents/skills/game-adaptation/SKILL.md). Run `pnpm art:pack` after editing the original artwork sources.
+
+## Origin
+
+Cloudwake Deluxe was extracted from [Arcade Lab](https://github.com/joacod/arcade-lab). Built by [joacod](https://joacod.com). This copy is independent; keep, update, or remove this note as the game diverges. The extracted commit and source path are in the [architecture origin](docs/architecture.md#origin) section.

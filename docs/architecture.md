@@ -26,4 +26,6 @@ Vite builds static assets with relative URLs. TypeScript checks source ownership
 
 ## Origin
 
-Extracted from `joacod/arcade-lab` commit `e75fbd2fe4786528afd188dd4bcabb7ead24ad61`. Code and original AI-generated artwork retain the [MIT license](../LICENSE). There are no third-party art packs. This repository now owns its implementation and future changes.
+Extracted from [Arcade Lab](https://github.com/joacod/arcade-lab), game source `src/games/cloudwake`, at commit `e75fbd2fe4786528afd188dd4bcabb7ead24ad61`. Built by [joacod](https://joacod.com).
+
+Code and original AI-generated artwork retain the [MIT license](../LICENSE). MIT requires that copyright notice and permission text to stay with copies. It does not require the links above. There are no third-party art packs. This repository owns its implementation and future changes. Keep, update, or remove the origin links as the game diverges.

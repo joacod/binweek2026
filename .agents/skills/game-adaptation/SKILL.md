@@ -30,3 +30,7 @@ Artwork remains required before Play or Resume. Keep retry and renderer recovery
 ## Verify proportionally
 
 Run `pnpm check`. For session, input, menu, readiness or renderer integration changes also run `pnpm check:browser` against the built game. Inspect changed art in gameplay and menus at a desktop and a narrow viewport, checking anchors, silhouette alignment, hazards, clipping and readable controls. Use on-demand screenshots, not permanent screenshot matrices. Add a test only for a concrete uncovered regression at the cheapest adequate layer.
+
+## Origin
+
+This game was extracted from Arcade Lab. The commit, repository, and game path are in the [architecture origin](../../../docs/architecture.md#origin) section. Before porting a later change from that repository, compare it with that commit and copy only behavior this game still wants. This project does not track Arcade Lab. The title-menu credit opens the playable collection at `https://arcade.joacod.com/`. Leave the repository address in the architecture origin section. Remove this note once the games have diverged.

@@ -27,6 +27,10 @@
 .game-menu-layer .game-menu-actions button:not(.game-menu-primary) { color: #d5e3dd; border-color: #8ca99e66; }
 .game-menu-layer :is(.game-menu-run-actions, .game-menu-navigation) { display: contents; }
 .game-menu-layer .game-menu-actions > :is(.game-menu-run-actions, .game-menu-navigation):not(:has(> button:not([hidden]))) { display: none; }
+.game-menu-layer .game-menu-origin { flex: 1 0 100%; margin: 2px 0 0; color: #8aa39b; font: 11px/1.5 system-ui, sans-serif; }
+.game-menu-layer .game-menu-origin a { color: #b7cdc4; text-underline-offset: 3px; }
+.game-menu-layer .game-menu-origin a:hover { color: var(--menu-accent, #b9efd4); }
+.game-menu-layer .game-menu-origin a:focus-visible { outline: 2px solid var(--menu-accent, #b9efd4); outline-offset: 3px; }
 .game-menu-layer .game-menu-utilities { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
 .game-menu-layer .game-menu-utilities button { flex: 1; min-height: 38px; background: #ffffff07; border-color: #ffffff14; color: #b9cdc7; font-size: 12px; box-shadow: none; }
 .game-menu-layer .game-menu-utilities button:enabled:hover { background: color-mix(in srgb, var(--menu-accent, #b9efd4) 12%, #ffffff05); border-color: color-mix(in srgb, var(--menu-accent, #b9efd4) 55%, transparent); box-shadow: none; }
