@@ -8,16 +8,21 @@ function chime(root: number, duration: number) {
       envelope: { attack: .003, decay: duration * .65, sustain: 0, release: .03 } },
   ] });
 }
-export const cloudwakeRecipes = {
-  pickup: chime(1174.66, .19),
+export const binweekRecipes = {
+  pickup: chime(1046.5, .17),
+  victory: defineSound({ schemaVersion: 1, kind: 'one-shot', duration: 1.8, layers: [523.25, 659.25, 783.99].map((frequency, index) => ({
+    id: `hive-${index}`, startOffset: index * .18,
+    source: { type: 'oscillator', waveform: 'triangle', frequency }, gainDb: -26,
+    envelope: { attack: .012, decay: .85, sustain: 0, release: .12 },
+  })) }),
   checkpoint: chime(659.25, .8),
   'shield-ready': chime(987.77, .55),
   'shield-hit': chime(392, .28),
   thrust: defineSound({ schemaVersion: 1, kind: 'one-shot', duration: .14, layers: [
-    { id: 'soft-turbine', source: { type: 'noise', color: 'white' }, gainDb: -37,
+    { id: 'wing-air', source: { type: 'noise', color: 'white' }, gainDb: -37,
       envelope: { attack: .025, decay: .08, sustain: .12, release: .03 },
-      effects: [{ type: 'filter', filter: 'bandpass', frequency: 650, q: .7 }] },
-    { id: 'motor', source: { type: 'oscillator', waveform: 'sine', frequency: { points: [[0, 145], [.13, 190]], curve: 'linear' } }, gainDb: -39,
+      effects: [{ type: 'filter', filter: 'bandpass', frequency: 900, q: .7 }] },
+    { id: 'wingbeat', source: { type: 'oscillator', waveform: 'sine', frequency: { points: [[0, 175], [.13, 210]], curve: 'linear' } }, gainDb: -39,
       envelope: { attack: .025, decay: .08, sustain: .1, release: .03 } },
   ] }),
   crash: defineSound({ schemaVersion: 1, kind: 'one-shot', duration: .55, layers: [

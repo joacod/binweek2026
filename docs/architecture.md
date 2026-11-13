@@ -1,12 +1,12 @@
 # Architecture
 
-The entrypoint mounts one game directly. The Sunward Radiance artwork is the only presentation. There is no catalog, theme switcher, alternate art bundle or dependency on the source repository.
+The entrypoint mounts Binagora Week 2026 directly. The Hive Reunion event artwork is the only presentation. There is no catalog, theme switcher, alternate art bundle or dependency on the source repository.
 
 | Owner | Responsibility |
 | --- | --- |
 | `src/main.ts`, `src/style.css` | Document mount, persistent fullscreen target, startup failure and HMR cleanup |
 | `src/game/app.ts` | Session composition, screen transitions, clock, required-art readiness, graphics recovery, fresh runs and checkpoint continuation |
-| `src/game/content.ts`, `route.ts`, `collection.ts`, `game.ts` | Tuning/geometry, seeded route certification, swept pickups, mutable rules and semantic events |
+| `src/game/content.ts`, `route.ts`, `collection.ts`, `game.ts` | Tuning/geometry, seeded route certification, swept pickups, mutable rules, finite completion, player-progress chapters and semantic events |
 | `src/game/input.ts` | Action mapping, launch hold, pointer capture and relative CSS-pixel drag |
 | `src/game/presentation.ts` | Canvas drawing, uniform projection, sprite anchors/cels, cosmetic history and bounded effects |
 | `src/game/art.ts`, `art/` | Required image URLs, decoded dimensions, runtime images and editable originals |

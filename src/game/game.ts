@@ -1,11 +1,11 @@
 import { overlaps, sweptCircle } from '../engine/collision.ts';
 import { flight, fly, multiplierAt, slide, speedAt, fragmentShape, pickupRear, type Flyer } from './content.ts';
 import { touchesFragment } from './collection.ts';
-import { createRoute, minePosition, nextPassage, passageCenter, safeGap, type Passage, type Route } from './route.ts';
+import { createRoute, minePosition, nextPassage, passageCenter, safeGap, journeyLegs, type Passage, type Route } from './route.ts';
 
 export interface Fragment { x: number; y: number; collected: boolean }
 export type FlightEvent = { x: number; y: number } & (
-  { type: 'pickup'; points: number } | { type: 'crash' | 'checkpoint' | 'shield-ready' | 'shield-hit' | 'fragment-missed' }
+  { type: 'pickup'; points: number } | { type: 'crash' | 'checkpoint' | 'shield-ready' | 'shield-hit' | 'fragment-missed' | 'victory' }
 );
 interface Progress {
   elapsed: number; distance: number; speed: number; score: number; player: Flyer;
@@ -13,7 +13,7 @@ interface Progress {
   shieldCharge: number; shieldUntil: number; shieldContact: number | null; passed: number; route: Route;
 }
 export interface Run extends Progress {
-  status: 'active' | 'paused' | 'crashed' | 'defeat'; thrust: boolean; lives: number;
+  status: 'active' | 'paused' | 'crashed' | 'defeat' | 'victory'; thrust: boolean; lives: number;
   checkpoint: { number: number; state: Progress }; events: FlightEvent[];
 }
 function copyProgress(state: Progress): Progress {
@@ -32,7 +32,7 @@ export function createRun(seed = 1): Run {
     checkpoint: { number: 0, state: copyProgress(state) }, events: [] };
 }
 function populate(run: Progress) {
-  while (run.route.previous.x < run.distance + 1800) {
+  while (run.route.leg < journeyLegs && run.route.previous.x < run.distance + 1800) {
     const passage = nextPassage(run.route);
     run.passages.push(passage);
     // A small arc in the certified corridor rewards deliberate height control.
@@ -130,5 +130,10 @@ export function stepRun(run: Run, action: { thrust: boolean; strafe?: number; sl
     state.player = { x: flight.playerX, y: checkpoint.center, vx: 0, vy: 0 };
     run.checkpoint = { number: run.checkpoint.number + 1, state };
     run.events.push({ type: 'checkpoint', ...point });
+    if (run.checkpoint.number === journeyLegs) {
+      run.status = 'victory'; run.thrust = false;
+      run.passages.length = run.fragments.length = 0;
+      run.events.push({ type: 'victory', ...point });
+    }
   }
 }

@@ -7,22 +7,25 @@ export interface Passage {
 }
 export interface Route { seed: number; index: number; leg: number; slot: number; variation: number; mirrored: boolean; previous: Passage }
 
+export const journeyLegs = 5;
+export const chapterNames = ['El Puerto', 'Playa Grande · Torreón del Monje', 'Rambla · Hermitage'] as const;
+/** Checkpoints are passed by the player; route.leg generates ahead of them. */
+export const chapterAt = (checkpoints: number) => checkpoints < 2 ? 0 : checkpoints < 4 ? 1 : 2;
+
 interface Leg { name: string; patterns: readonly Pattern[]; centers: readonly number[]; gap: number; width: number }
 const legs: readonly Leg[] = [
-  { name: 'Sunward Approach', patterns: ['rise', 'dive', 'gate', 'rise', 'dive'], centers: [270, 330, 260, 200, 400], gap: 254, width: 86 },
-  { name: 'High / Low', patterns: ['gate', 'gate', 'drift', 'gate', 'rise', 'gate', 'drift'], centers: [180, 420, 170, 420, 180, 430, 170], gap: 208, width: 90 },
-  { name: 'Crystal Steps', patterns: ['gate', 'gate', 'drift', 'gate', 'gate', 'gate'], centers: [160, 290, 440, 430, 300, 170], gap: 180, width: 104 },
-  { name: 'Shifting Ruins', patterns: ['sway', 'gate', 'sway', 'drift', 'gate', 'sway'], centers: [210, 400, 210, 430, 170, 390], gap: 174, width: 116 },
-  { name: 'Storm Weave', patterns: ['drift', 'sway', 'gate', 'drift', 'sway', 'gate'], centers: [160, 420, 170, 440, 180, 420], gap: 156, width: 124 },
-  { name: 'Needle Thread', patterns: ['gate', 'sway', 'gate', 'gate', 'drift', 'sway'], centers: [190, 300, 410, 180, 440, 190], gap: 142, width: 132 },
+  { name: 'El Puerto', patterns: ['rise', 'dive', 'gate', 'rise', 'dive'], centers: [270, 330, 260, 200, 400], gap: 254, width: 86 },
+  { name: 'Coastal departure', patterns: ['gate', 'gate', 'drift', 'gate', 'rise', 'gate', 'drift'], centers: [180, 420, 170, 420, 180, 430, 170], gap: 230, width: 90 },
+  { name: 'Playa Grande', patterns: ['gate', 'gate', 'drift', 'gate', 'gate', 'gate'], centers: [160, 290, 440, 430, 300, 170], gap: 220, width: 104 },
+  { name: 'Torreón del Monje', patterns: ['sway', 'gate', 'sway', 'drift', 'gate', 'sway'], centers: [210, 400, 210, 430, 170, 390], gap: 214, width: 108 },
+  { name: 'The hive is near', patterns: ['drift', 'sway', 'gate', 'drift', 'sway', 'gate'], centers: [160, 420, 170, 440, 180, 420], gap: 210, width: 112 },
 ];
-/** Later legs remix different demands instead of repeating a single final leg. */
+/** One bounded trip, with a gentle increase in passage count. */
 export function legAt(index: number) {
-  const template = legs[index < legs.length ? index : 2 + (index - legs.length) % 4]!;
-  const pressure = Math.max(0, index - 5);
+  const template = legs[index];
+  if (!template) throw new RangeError('Journey route is complete');
   const pace = Math.floor((speedAt(index) - flight.startSpeed) / flight.speedStep);
-  return { ...template, gap: Math.max(104, template.gap - pressure * 3),
-    width: Math.min(150, template.width + pressure * 2), hazards: Math.min(15, 5 + index * 2) + pace };
+  return { ...template, hazards: 5 + index * 2 + pace };
 }
 
 export function createRoute(seed: number): Route {
