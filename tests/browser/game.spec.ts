@@ -15,6 +15,21 @@ test('standalone artwork retry unlocks flight and pause preserves a resumable ru
   await expect(page.locator('canvas')).toHaveCount(1);
   await expect(page.getByRole('radio')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Game selection' })).toHaveCount(0);
+  // The title used to require scrolling even before its instructions were open.
+  for (const viewport of [{width:1280,height:720}, {width:360,height:640}, {width:844,height:390}]) {
+    await page.setViewportSize(viewport);
+    expect(await page.locator('.game-menu-body').evaluate(element => element.scrollHeight <= element.clientHeight + 1)).toBe(true);
+    await expect(play).toBeInViewport();
+    await expect(page.getByRole('button', {name:'How to play',exact:true})).toBeInViewport();
+  }
+  await page.getByRole('button', {name:'How to play',exact:true}).click();
+  await expect(page.getByRole('heading', {name:'Flight guide',exact:true})).toBeVisible();
+  await expect(page.getByRole('button', {name:'Mute sound',exact:true})).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', {name:'How to play',exact:true})).toBeFocused();
+  await page.setViewportSize({width:1280,height:900});
+  // Let the display-change suspension settle before launching a new run.
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await play.focus();
   await page.keyboard.down('Space');
   await expect(page.locator('.cloudwake-app')).toHaveAttribute('data-screen', 'playing');

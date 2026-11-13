@@ -4,7 +4,7 @@ import { flight, fly, multiplierAt, speedAt, slide, fragmentShape, pickupRear } 
 import { createRoute, nextPassage, reachable, minePosition, steerTo, legAt, safeGap, passageCenter, chapterAt, journeyLegs } from '../../../src/game/route.ts';
 import { continueRun, createRun, stepRun, pauseRun, takeEvents } from '../../../src/game/game.ts';
 import { touchesFragment } from '../../../src/game/collection.ts';
-import { coastalBlend, createPassageViews } from '../../../src/game/presentation.ts';
+import { coastalBlend, coastalPan, gullFrame, createPassageViews } from '../../../src/game/presentation.ts';
 const dt = 1 / 60;
 
 test('hold gives continuous lift, release brakes then falls, speed and cloud boundaries are bounded', () => {
@@ -277,24 +277,37 @@ test('certified routes stay clear in the actual collision simulation across cons
 });
 
 
-test('coastal chapters dissolve from the previous view on checkpoint time, including pause and recovery', () => {
+test('all five coastal places dissolve on player checkpoint time, including pause and recovery', () => {
   const run = createRun(42);
-  run.checkpoint.number = 2; run.elapsed = run.checkpoint.state.elapsed = 40;
-  const frame = () => coastalBlend(run.checkpoint.number, run.elapsed, run.checkpoint.state.elapsed);
-  assert.deepEqual(frame(), { current: 1, previous: 0, mix: 0 }, 'crossing a checkpoint keeps the outgoing coast visible');
-  run.elapsed += 2;
-  const halfway = frame();
-  assert.ok(halfway.mix > 0 && halfway.mix < 1);
-  pauseRun(run, true); stepRun(run, { thrust: true }, 1);
-  assert.deepEqual(frame(), halfway, 'wall time cannot advance a paused dissolve');
-  run.status = 'crashed'; continueRun(run);
-  assert.equal(frame().mix, 0, 'checkpoint recovery restores the same outgoing view');
-  run.checkpoint.number = 4; run.elapsed = run.checkpoint.state.elapsed = 80;
-  assert.deepEqual(frame(), { current: 2, previous: 1, mix: 0 });
-  run.elapsed += 4;
-  assert.equal(frame().mix, 1);
-  run.checkpoint.number = 5; run.checkpoint.state.elapsed = run.elapsed;
-  assert.deepEqual(frame(), { current: 2, previous: 2, mix: 1 }, 'arrival does not restart the chapter transition');
+  for (let leg = 1; leg < journeyLegs; leg++) {
+    run.status = 'active'; run.checkpoint.number = leg;
+    run.elapsed = run.checkpoint.state.elapsed = leg * 20;
+    const frame = () => coastalBlend(run.checkpoint.number, run.elapsed, run.checkpoint.state.elapsed);
+    assert.deepEqual(frame(), { current: leg, previous: leg - 1, mix: 0 });
+    run.elapsed += 2;
+    const halfway = frame();
+    assert.ok(halfway.mix > 0 && halfway.mix < 1);
+    pauseRun(run, true); stepRun(run, { thrust: true }, 1);
+    assert.deepEqual(frame(), halfway, 'pause cannot advance the dissolve');
+    run.status = 'crashed'; continueRun(run);
+    assert.equal(frame().mix, 0, 'recovery restores the outgoing view');
+    run.elapsed += 4;
+    assert.equal(frame().mix, 1);
+  }
+  assert.deepEqual(coastalBlend(5, 100, 100), { current: 4, previous: 4, mix: 1 }, 'arrival keeps the Rambla');
+});
+
+test('landmarks travel continuously without wrapping and gulls flap around a stable pause clock', () => {
+  let previous = 0;
+  for (let distance = 0; distance <= 50000; distance += 10) {
+    const x = coastalPan(distance, 390);
+    assert.ok(x <= previous && x >= -390 * .28, 'pan never reverses or exposes a plate edge');
+    assert.ok(previous - x < 1, 'pan has no tile or checkpoint jumps');
+    previous = x;
+  }
+  assert.equal(coastalPan(0, 390, true), coastalPan(50000, 390, true));
+  assert.deepEqual(new Set(Array.from({length:80}, (_, i) => gullFrame(i / 70, 0))), new Set([0,1,2]));
+  assert.equal(gullFrame(7.5, 2, true), 1, 'reduced motion uses the glide cel');
 });
 
 test('a finite coastal journey follows player checkpoints, welcomes once and freezes results', () => {
@@ -309,7 +322,7 @@ test('a finite coastal journey follows player checkpoints, welcomes once and fre
         if(event.type==='checkpoint') checkpoints++;
         if(event.type==='victory') welcomes++;
       }
-      assert.equal(chapterAt(run.checkpoint.number),run.checkpoint.number<2?0:run.checkpoint.number<4?1:2);
+      assert.equal(chapterAt(run.checkpoint.number),Math.min(run.checkpoint.number, journeyLegs - 1));
     }
     assert.equal(run.status,'victory',`seed ${seed}`);
     assert.ok(run.elapsed>=90 && run.elapsed<=150,`duration ${run.elapsed}`);

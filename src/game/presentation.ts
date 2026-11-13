@@ -2,7 +2,7 @@ import { prepareImages, validateImageDimensions, type PreparedImages } from '../
 import { urls, sizes } from './art.ts';
 import type { Run, FlightEvent } from './game.ts';
 import { flight, viewScale, fragmentShape } from './content.ts';
-import { minePosition, passageCenter, chapterAt, type Passage } from './route.ts';
+import { minePosition, passageCenter, chapterAt, journeyLegs, type Passage } from './route.ts';
 
 /** Whole-cel roles, drawing footprints and anchors are independent of physics. */
 const courier = { cell: 512, size: 94, anchorX: .55, anchorY: .60, glide: [0, 3], thrust: [1, 3] } as const;
@@ -14,9 +14,18 @@ interface Viewport { width: number; height: number; ratio: number }
 /** Saved simulation time makes chapter dissolves pause/retry safe and independent of lookahead. */
 export function coastalBlend(checkpoints: number, elapsed: number, checkpointElapsed: number) {
   const current = chapterAt(checkpoints);
-  const changing = checkpoints === 2 || checkpoints === 4;
+  const changing = checkpoints > 0 && checkpoints < journeyLegs;
   const progress = changing ? Math.max(0, Math.min(1, (elapsed - checkpointElapsed) / 4)) : 1;
   return { current, previous: changing ? current - 1 : current, mix: progress * progress * (3 - 2 * progress) };
+}
+
+/** Continuous, bounded travel. Landmark plates never wrap, mirror, or reverse. */
+export function coastalPan(distance: number, width: number, reducedMotion = false) {
+  return -width * .28 * (reducedMotion ? .5 : 1 - Math.exp(-Math.max(0, distance) / 14000));
+}
+const wingbeat = [0, 1, 2, 1, 0, 1, 1, 1] as const;
+export function gullFrame(elapsed: number, phase: number, reducedMotion = false) {
+  return reducedMotion ? 1 : wingbeat[Math.floor((elapsed * 7 + phase) % wingbeat.length)]!;
 }
 
 export function flightView(width: number, height: number) {
@@ -33,7 +42,7 @@ export function createPassageViews() {
       for (const [id, passage] of passages) {
         const right = passage.pattern === 'breather'
           ? passage.x + passage.width + flight.radius + beacon.size * (1 - beacon.anchorX)
-          : passage.pattern === 'drift' ? passage.x + passage.width / 2 + 47
+          : passage.pattern === 'drift' ? passage.x + passage.width / 2 + 58
           : passage.x + passage.width;
         if (right - distance < left) passages.delete(id);
       }
@@ -103,14 +112,14 @@ export function createPresentation(surface: HTMLElement) {
     // Keep live transforms bilinear; high-quality resampling stalls large Retina canvases.
     ctx.imageSmoothingQuality = 'low';
     ctx.fillStyle = '#79bbcd'; ctx.fillRect(0, 0, width, height);
-    // One panorama per place: architecture never repeats or flips at a tile edge.
-    // Fit the coast across narrow screens, extending only its quiet top sky upwards.
-    const skyWidth = width * 1.06, skyHeight = skyWidth / 1.5;
+    // Slow continuous landmark travel, faster water and nearest shoreline props.
+    // All five plates share the same projection and dissolve as complete scenes.
+    const skyWidth = width * 1.28, skyHeight = skyWidth / 1.5;
     const skyY = height - skyHeight;
-    const pan = motion.matches ? .5 : .5 + Math.sin(distance / 18000) * .5;
-    const skyX = -(skyWidth - width) * pan;
-    const plates = [images.sky!, images.beach!, images.central!];
-    const skyColors = ['#90c6d8', '#86bcd0', '#7fbedb'];
+    const skyX = coastalPan(distance, width, motion.matches);
+    const travel = motion.matches ? 0 : distance * view.scale;
+    const plates = [images.sky!, images.grande!, images.varese!, images.beach!, images.central!];
+    const skyColors = ['#90c6d8', '#88bdd0', '#88bdd0', '#86bcd0', '#7fbedb'];
     const blend = titleTime !== undefined ? { current: 0, previous: 0, mix: 1 }
       : coastalBlend(run.checkpoint.number, run.elapsed, run.checkpoint.state.elapsed);
     function panorama(index: number, opacity: number) {
@@ -122,6 +131,33 @@ export function createPresentation(surface: HTMLElement) {
         edge.addColorStop(0, skyColors[index]!); edge.addColorStop(1, `${skyColors[index]}00`);
         ctx.fillStyle = edge; ctx.fillRect(0, skyY, width, skyHeight * .12);
       }
+      // Small distant clouds and foam streaks have independent depth speeds.
+      ctx.fillStyle = '#fff8e9'; ctx.globalAlpha = opacity * .22;
+      for (let i = 0; i < 4; i++) {
+        const span = width + 300, x = ((i * 439 - travel * .045) % span + span) % span - 150;
+        const y = height * (.14 + (i % 3) * .14);
+        ctx.beginPath(); ctx.ellipse(x, y, 55 + i * 7, 4, 0, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.strokeStyle = '#f3ffef'; ctx.lineWidth = 1.2;
+      for (let row = 0; row < 3; row++) {
+        ctx.globalAlpha = opacity * (.18 + row * .04);
+        for (let i = 0; i < 7; i++) {
+          const span = width + 220, x = ((i * 211 + row * 79 - travel * (.1 + row * .07)) % span + span) % span - 110;
+          const y = height - skyHeight * (.22 - row * .035);
+          ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 22, y + 3, x + 55, y); ctx.stroke();
+        }
+      }
+      // Whole authored props pass at shoreline speed; only generic scenery repeats.
+      const propSize = Math.max(88, Math.min(180, width * .16));
+      for (let i = 0; i < 3; i++) {
+        const span = width + 680, x = ((i * 683 - travel * .24) % span + span) % span - 280;
+        const cell = i === 1 ? 3 : index === 0 ? 0 : index === 4 ? 2 : 1;
+        ctx.globalAlpha = opacity * .92;
+        const baseline = cell === 0 ? height - skyHeight * .11 + (motion.matches ? 0 : Math.sin(time * 1.6 + i) * 2) : height + 12;
+        ctx.drawImage(images.scenery!, cell % 2 * 512, Math.floor(cell / 2) * 512, 512, 512,
+          x, baseline - propSize, propSize, propSize);
+      }
+      ctx.globalAlpha = opacity;
     }
     if (blend.mix < 1) panorama(blend.previous, 1);
     if (blend.mix > 0) panorama(blend.current, blend.mix);
@@ -140,31 +176,32 @@ export function createPresentation(surface: HTMLElement) {
       ctx.fillStyle = '#4a4a4a'; ctx.fillText(text, x, y + 2);
     }
     function reviewer(x: number, y: number, size = 1) {
-      ctx.save(); ctx.translate(x,y); ctx.scale(size,size); ctx.fillStyle = '#6c7875';
-      ctx.beginPath(); ctx.ellipse(0,0,26,12,-.12,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(15,-15,12,20,-.2,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#323232'; ctx.beginPath(); ctx.arc(19,-24,2,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#f8c477'; ctx.fillRect(-35,-38,36,22); ctx.fillStyle='#4a4a4a'; ctx.fillRect(-19,-16,2,20);
-      ctx.font='800 10px system-ui'; ctx.textAlign='center'; ctx.fillText('LGTM',-17,-23); ctx.restore();
+      ctx.drawImage(images.reviewer!, x - 62 * size, y - 62 * size, 124 * size, 62 * size);
     }
-    // Small coastal workstations are decorative; captions follow the five flight legs.
-    if (titleTime !== undefined || run.status !== 'victory') {
-      const scenicX = worldWidth - view.x - 112;
+    // Passing vignettes share continuous saved distance, fading with their coastal place.
+    if (titleTime === undefined && run.status !== 'victory') {
+      const scenicX = motion.matches ? worldWidth - view.x - 120
+        : worldWidth - view.x + 180 - (distance * .24 % (worldWidth + 500));
       const scenicY = (height - Math.max(64 * view.scale, skyHeight * .1) - view.y) / view.scale;
-      const leg = titleTime !== undefined ? 0 : Math.min(4, run.checkpoint.number);
-      ctx.save(); ctx.translate(0, scenicY - 533);
-      bee(0, scenicX + 24, 510 + Math.sin(decorative * 2) * 2, 49, true);
-      ctx.fillStyle = '#996742'; ctx.fillRect(scenicX - 42, 533, 90, 5);
-      ctx.fillRect(scenicX - 35, 538, 4, 17); ctx.fillRect(scenicX + 37, 538, 4, 17);
-      ctx.fillStyle = '#394b50'; ctx.beginPath(); ctx.roundRect(scenicX - 26, 505, 36, 27, 3); ctx.fill();
-      ctx.fillStyle = '#b1fff2'; ctx.font = '800 11px monospace'; ctx.textAlign = 'center';
-      ctx.fillText(leg >= 3 ? 'AI' : '</>', scenicX - 8, 523);
-      ctx.fillStyle = '#607a7c'; ctx.fillRect(scenicX - 30, 531, 44, 3);
-      if (leg === 0) reviewer(scenicX - 79, 548, .65);
-      if (leg === 4) ctx.drawImage(images.objects!, 0, 512, 512, 512, scenicX - 64, 500, 31, 34);
-      const captions = ['404: office not found.', 'git checkout -- playa', 'Works on my beach.', 'Prompt: más churros.', 'LLM: Lobo Language Model'];
-      label(captions[leg]!, scenicX - 12, 574, Math.max(10, 9 / view.scale));
-      ctx.restore();
+      function workstation(leg: number, opacity: number) {
+        ctx.globalAlpha = opacity;
+        ctx.save(); ctx.translate(0, scenicY - 533);
+        bee(0, scenicX + 24, 510 + Math.sin(decorative * 2) * 2, 49, true);
+        ctx.fillStyle = '#996742'; ctx.fillRect(scenicX - 42, 533, 90, 5);
+        ctx.fillRect(scenicX - 35, 538, 4, 17); ctx.fillRect(scenicX + 37, 538, 4, 17);
+        ctx.fillStyle = '#394b50'; ctx.beginPath(); ctx.roundRect(scenicX - 26, 505, 36, 27, 3); ctx.fill();
+        ctx.fillStyle = '#b1fff2'; ctx.font = '800 11px monospace'; ctx.textAlign = 'center';
+        ctx.fillText(leg >= 3 ? 'AI' : '</>', scenicX - 8, 523);
+        ctx.fillStyle = '#607a7c'; ctx.fillRect(scenicX - 30, 531, 44, 3);
+        if (leg === 0 || leg === 4) reviewer(scenicX - 79, 548, .8);
+        if (leg === 0) ctx.drawImage(images.objects!, 0, 512, 512, 512, scenicX - 64, 500, 38, 34);
+        const captions = ['while (rabas) { repeat; }', 'git checkout -- playa', 'Surfing the context window.', 'Prompt: más churros.', 'LLM: Lobo Language Model'];
+        label(captions[leg]!, scenicX - 12, 574, Math.max(10, 9 / view.scale));
+        ctx.restore();
+      }
+      if (blend.mix < 1) workstation(blend.previous, 1 - blend.mix);
+      if (blend.mix > 0) workstation(blend.current, blend.mix);
+      ctx.globalAlpha = 1;
     }
     function drawBeacon(frame: number, x: number, y: number) {
       ctx.save(); ctx.translate(x,y);
@@ -242,8 +279,12 @@ export function createPresentation(surface: HTMLElement) {
       }
       if (passage.pattern === 'drift') {
         const point = minePosition(passage, run.elapsed);
-        ctx.fillStyle='#c2694925';ctx.beginPath();ctx.arc(point.x-distance,point.y,39,0,Math.PI*2);ctx.fill();
-        ctx.drawImage(images.objects!,512,512,512,512,point.x-distance-47,point.y-47,94,94);
+        const frame = gullFrame(decorative, passage.phase, motion.matches);
+        ctx.save(); ctx.translate(point.x-distance,point.y);
+        // Bank slightly into the existing flight path. The body pivot stays on the hazard.
+        ctx.rotate(motion.matches ? 0 : -Math.cos(run.elapsed * 1.7 + passage.phase) * .065);
+        ctx.drawImage(images.gull!,frame*512,0,512,512,-58,-58*280/256,116,116);
+        ctx.restore();
       } else {
         const center = passageCenter(passage, run.elapsed), upper = center - passage.gap / 2, lower = center + passage.gap / 2;
         if (passage.pattern === 'rise' || passage.pattern === 'gate' || passage.pattern === 'sway') stone(x, lower, passage.width, flight.height - lower + 32, false);
@@ -255,11 +296,13 @@ export function createPresentation(surface: HTMLElement) {
     function drawFragment(fragment: { x: number; y: number }) {
       const x = fragment.x - distance;
       if (x + fragmentShape.halfWidth < -view.x || x - fragmentShape.halfWidth > worldWidth - view.x) return;
-      ctx.globalAlpha = motion.matches ? 1 : .9 + Math.sin(time * 4 + fragment.x) * .1;
+      ctx.globalAlpha = 1;
       const variant = Math.round(fragment.x / 42) % 13;
       const cell = variant === 0 ? 2 : variant < 4 ? 1 : 0;
-      ctx.fillStyle='#fff8e98c';ctx.beginPath();ctx.arc(x,fragment.y,17,0,Math.PI*2);ctx.fill();
-      ctx.drawImage(images.objects!, cell % 2 * 512, Math.floor(cell / 2) * 512,512,512,x-17,fragment.y-17,34,34);
+      const tilt = motion.matches ? 0 : Math.sin(time * 2.5 + fragment.x) * .045;
+      ctx.save(); ctx.translate(x,fragment.y); ctx.rotate(tilt);
+      ctx.drawImage(images.objects!, cell % 2 * 512, Math.floor(cell / 2) * 512,512,512,-20,-20,40,40);
+      ctx.restore();
     }
     for (const fragment of run.fragments) if (!fragment.collected) drawFragment(fragment);
     let retained = 0;
