@@ -12,7 +12,7 @@ Event hash beacons activate once: “Checkpoint committed.” Continue restores 
 
 ## Collectibles and collision
 
-Alfajores are the recurring reward, with churros and rubber ducks as occasional appearances. All share one score and shield path. Distance awards one point per displayed meter. Collectibles start at 25 points; five consecutive pickups raise subsequent values through ×2, ×3 and ×4. Missing a reward behind the rear flight slot resets the streak once. Cosmetic missed rewards remain until the viewport clips them.
+Alfajores are the recurring reward, with churros and miniature stone sea-lion souvenirs as occasional appearances. All share one score and shield path. Distance awards one point per displayed meter. Collectibles start at 25 points; five consecutive pickups raise subsequent values through ×2, ×3 and ×4. Missing a reward behind the rear flight slot resets the streak once. Cosmetic missed rewards remain until the viewport clips them.
 
 The bee deliberately replaces the rider/scooter pickup hull with a body-and-bag octagon spanning ±25 units horizontally and −23 to +25 vertically. Wings and antennae are decorative. The forgiving 16-unit circular hazard body is unchanged. Rewards use a 13-by-13 half-size diamond envelope, replacing the narrow crystal's 10-by-15 envelope. Swept collection still catches fast travel and lateral crossings. Stone fills the actual top/bottom collision regions, and the gull uses the original moving hazard's 35-unit radius and position.
 
@@ -20,7 +20,7 @@ Thirty collectibles charge a five-second Hive Shield. Its bubble and meter show 
 
 ## Art, sound and reunion
 
-Binagora's unmodified official logo sits in a padded light menu. Orange `#F59E2B`, gray `#4A4A4A`, charcoal, cream and Atlantic blue carry the event identity. Complete authored bee cels have expressive wings, antennae, tilt, collection delight and a small travel bag. Original coastal plates, solid stone hazards, food atlas and hotel elevation replace the prior fantasy art. [Art contracts and provenance](../src/game/art/README.md) describe assets and packing.
+Binagora's unmodified official logo sits in a padded light menu. Orange `#F59E2B`, gray `#4A4A4A`, charcoal, cream and Atlantic blue carry the event identity. Complete authored bee cels have textured fur, amber sunglasses, veined wings, antennae, tilt, collection delight and a small travel bag. Original coastal plates, solid stone hazards, food/souvenir atlas and hotel elevation replace the prior fantasy art. The Rambla's two iconic stone sea-lion monuments frame the central chapter. Each panorama appears once, with bounded drift and a four-second dissolve on chapter changes instead of repeated mirrored architecture. Narrow views retain the coastline across their width. Small laptop workstations add developer and AI jokes such as “git checkout -- playa”, “Prompt: más churros.” and “LLM: Lobo Language Model”. [Art contracts and provenance](../src/game/art/README.md) describe assets and packing.
 
 The Hermitage arrival ends hazards and scoring. A roughly 3.5-second decorative glide joins a large bounded crowd of bees below the complete hotel frontage. “Welcome to Binagora Week 2026” and “The whole hive, together.” accompany honest current-run results and an immediately available Restart button. The full crowd is awarded for reaching the destination. Confetti ends after four seconds, while reduced motion shows the complete static welcome. Food and the LGTM sea lion remain supporting details.
 
