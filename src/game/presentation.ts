@@ -11,6 +11,14 @@ interface Spark { x: number; y: number; vx: number; vy: number; start: number; l
 interface ScorePop { x: number; y: number; start: number; points: number }
 interface Viewport { width: number; height: number; ratio: number }
 
+/** Saved simulation time makes chapter dissolves pause/retry safe and independent of lookahead. */
+export function coastalBlend(checkpoints: number, elapsed: number, checkpointElapsed: number) {
+  const current = chapterAt(checkpoints);
+  const changing = checkpoints === 2 || checkpoints === 4;
+  const progress = changing ? Math.max(0, Math.min(1, (elapsed - checkpointElapsed) / 4)) : 1;
+  return { current, previous: changing ? current - 1 : current, mix: progress * progress * (3 - 2 * progress) };
+}
+
 export function flightView(width: number, height: number) {
   const scale = viewScale(width, height);
   return { scale, width: width / scale, y: (height - flight.height * scale) / 2, x: Math.max(0, width / scale * .2 - flight.playerX) };
@@ -95,15 +103,29 @@ export function createPresentation(surface: HTMLElement) {
     // Keep live transforms bilinear; high-quality resampling stalls large Retina canvases.
     ctx.imageSmoothingQuality = 'low';
     ctx.fillStyle = '#79bbcd'; ctx.fillRect(0, 0, width, height);
-    // Mirrored plates keep the scrolling horizon continuous without a hard seam.
-    const skyWidth = Math.max(width, height * 1.5), skyHeight = skyWidth / 1.5;
-    const skyOffset = motion.matches ? 0 : distance * .065 * view.scale;
-    const tile = Math.floor(skyOffset / skyWidth), scroll = skyOffset % skyWidth;
-    for (let i = -1; i < 2; i++) {
-      ctx.save(); ctx.translate(i * skyWidth - scroll - Math.max(0, skyWidth-width)*.55, (height - skyHeight) / 2);
-      if ((tile + i) % 2 !== 0) { ctx.translate(skyWidth, 0); ctx.scale(-1, 1); }
-      ctx.drawImage(chapterAt(run.checkpoint.number) === 0 ? images.sky! : chapterAt(run.checkpoint.number) === 1 ? images.beach! : images.central!, 0, 0, skyWidth, skyHeight); ctx.restore();
+    // One panorama per place: architecture never repeats or flips at a tile edge.
+    // Fit the coast across narrow screens, extending only its quiet top sky upwards.
+    const skyWidth = width * 1.06, skyHeight = skyWidth / 1.5;
+    const skyY = height - skyHeight;
+    const pan = motion.matches ? .5 : .5 + Math.sin(distance / 18000) * .5;
+    const skyX = -(skyWidth - width) * pan;
+    const plates = [images.sky!, images.beach!, images.central!];
+    const skyColors = ['#90c6d8', '#86bcd0', '#7fbedb'];
+    const blend = titleTime !== undefined ? { current: 0, previous: 0, mix: 1 }
+      : coastalBlend(run.checkpoint.number, run.elapsed, run.checkpoint.state.elapsed);
+    function panorama(index: number, opacity: number) {
+      ctx.globalAlpha = opacity;
+      if (skyY > 0) { ctx.fillStyle = skyColors[index]!; ctx.fillRect(0, 0, width, skyY + 1); }
+      ctx.drawImage(plates[index]!, skyX, skyY, skyWidth, skyHeight);
+      if (skyY > 0) {
+        const edge = ctx.createLinearGradient(0, skyY, 0, skyY + skyHeight * .12);
+        edge.addColorStop(0, skyColors[index]!); edge.addColorStop(1, `${skyColors[index]}00`);
+        ctx.fillStyle = edge; ctx.fillRect(0, skyY, width, skyHeight * .12);
+      }
     }
+    if (blend.mix < 1) panorama(blend.previous, 1);
+    if (blend.mix > 0) panorama(blend.current, blend.mix);
+    ctx.globalAlpha = 1;
     ctx.setTransform(view.scale * ratio, 0, 0, view.scale * ratio, view.x * view.scale * ratio, view.y * ratio);
     const worldWidth = view.width;
     function bee(frame: number, x: number, y: number, size: number = courier.size, flip = false) {
@@ -125,12 +147,24 @@ export function createPresentation(surface: HTMLElement) {
       ctx.fillStyle='#f8c477'; ctx.fillRect(-35,-38,36,22); ctx.fillStyle='#4a4a4a'; ctx.fillRect(-19,-16,2,20);
       ctx.font='800 10px system-ui'; ctx.textAlign='center'; ctx.fillText('LGTM',-17,-23); ctx.restore();
     }
-    // A few coworkers inhabit the coast. These never enter collision or route state.
+    // Small coastal workstations are decorative; captions follow the five flight legs.
     if (titleTime !== undefined || run.status !== 'victory') {
-      const scenicX = worldWidth - view.x - 100;
-      bee(2, scenicX, 500 + Math.sin(decorative * 2) * 3, 49, true);
-      if (chapterAt(run.checkpoint.number) === 0) reviewer(scenicX - 65, 555, .8);
-      else if (chapterAt(run.checkpoint.number) === 1) label('Works on my beach.', scenicX - 35, 553);
+      const scenicX = worldWidth - view.x - 112;
+      const scenicY = (height - Math.max(64 * view.scale, skyHeight * .1) - view.y) / view.scale;
+      const leg = titleTime !== undefined ? 0 : Math.min(4, run.checkpoint.number);
+      ctx.save(); ctx.translate(0, scenicY - 533);
+      bee(0, scenicX + 24, 510 + Math.sin(decorative * 2) * 2, 49, true);
+      ctx.fillStyle = '#996742'; ctx.fillRect(scenicX - 42, 533, 90, 5);
+      ctx.fillRect(scenicX - 35, 538, 4, 17); ctx.fillRect(scenicX + 37, 538, 4, 17);
+      ctx.fillStyle = '#394b50'; ctx.beginPath(); ctx.roundRect(scenicX - 26, 505, 36, 27, 3); ctx.fill();
+      ctx.fillStyle = '#b1fff2'; ctx.font = '800 11px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(leg >= 3 ? 'AI' : '</>', scenicX - 8, 523);
+      ctx.fillStyle = '#607a7c'; ctx.fillRect(scenicX - 30, 531, 44, 3);
+      if (leg === 0) reviewer(scenicX - 79, 548, .65);
+      if (leg === 4) ctx.drawImage(images.objects!, 0, 512, 512, 512, scenicX - 64, 500, 31, 34);
+      const captions = ['404: office not found.', 'git checkout -- playa', 'Works on my beach.', 'Prompt: más churros.', 'LLM: Lobo Language Model'];
+      label(captions[leg]!, scenicX - 12, 574, Math.max(10, 9 / view.scale));
+      ctx.restore();
     }
     function drawBeacon(frame: number, x: number, y: number) {
       ctx.save(); ctx.translate(x,y);

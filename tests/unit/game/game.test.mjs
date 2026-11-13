@@ -4,7 +4,7 @@ import { flight, fly, multiplierAt, speedAt, slide, fragmentShape, pickupRear } 
 import { createRoute, nextPassage, reachable, minePosition, steerTo, legAt, safeGap, passageCenter, chapterAt, journeyLegs } from '../../../src/game/route.ts';
 import { continueRun, createRun, stepRun, pauseRun, takeEvents } from '../../../src/game/game.ts';
 import { touchesFragment } from '../../../src/game/collection.ts';
-import { createPassageViews } from '../../../src/game/presentation.ts';
+import { coastalBlend, createPassageViews } from '../../../src/game/presentation.ts';
 const dt = 1 / 60;
 
 test('hold gives continuous lift, release brakes then falls, speed and cloud boundaries are bounded', () => {
@@ -276,6 +276,26 @@ test('certified routes stay clear in the actual collision simulation across cons
   }
 });
 
+
+test('coastal chapters dissolve from the previous view on checkpoint time, including pause and recovery', () => {
+  const run = createRun(42);
+  run.checkpoint.number = 2; run.elapsed = run.checkpoint.state.elapsed = 40;
+  const frame = () => coastalBlend(run.checkpoint.number, run.elapsed, run.checkpoint.state.elapsed);
+  assert.deepEqual(frame(), { current: 1, previous: 0, mix: 0 }, 'crossing a checkpoint keeps the outgoing coast visible');
+  run.elapsed += 2;
+  const halfway = frame();
+  assert.ok(halfway.mix > 0 && halfway.mix < 1);
+  pauseRun(run, true); stepRun(run, { thrust: true }, 1);
+  assert.deepEqual(frame(), halfway, 'wall time cannot advance a paused dissolve');
+  run.status = 'crashed'; continueRun(run);
+  assert.equal(frame().mix, 0, 'checkpoint recovery restores the same outgoing view');
+  run.checkpoint.number = 4; run.elapsed = run.checkpoint.state.elapsed = 80;
+  assert.deepEqual(frame(), { current: 2, previous: 1, mix: 0 });
+  run.elapsed += 4;
+  assert.equal(frame().mix, 1);
+  run.checkpoint.number = 5; run.checkpoint.state.elapsed = run.elapsed;
+  assert.deepEqual(frame(), { current: 2, previous: 2, mix: 1 }, 'arrival does not restart the chapter transition');
+});
 
 test('a finite coastal journey follows player checkpoints, welcomes once and freezes results', () => {
   for (const seed of [1,17,42]) {
