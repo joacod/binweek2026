@@ -8,15 +8,15 @@ export interface Passage {
 export interface Route { seed: number; index: number; leg: number; slot: number; variation: number; mirrored: boolean; previous: Passage }
 
 export const journeyLegs = 5;
-export const chapterNames = ['El Puerto', 'Playa Grande · Torreón del Monje', 'Rambla · Hermitage'] as const;
+export const chapterNames = ['El Puerto', 'Playa Grande', 'Cabo Corrientes · Varese', 'Torreón del Monje', 'Rambla · Hermitage'] as const;
 /** Checkpoints are passed by the player; route.leg generates ahead of them. */
-export const chapterAt = (checkpoints: number) => checkpoints < 2 ? 0 : checkpoints < 4 ? 1 : 2;
+export const chapterAt = (checkpoints: number) => Math.min(journeyLegs - 1, Math.max(0, checkpoints));
 
 interface Leg { name: string; patterns: readonly Pattern[]; centers: readonly number[]; gap: number; width: number }
 const legs: readonly Leg[] = [
   { name: 'El Puerto', patterns: ['rise', 'dive', 'gate', 'rise', 'dive'], centers: [270, 330, 260, 200, 400], gap: 254, width: 86 },
-  { name: 'Coastal departure', patterns: ['gate', 'gate', 'drift', 'gate', 'rise', 'gate', 'drift'], centers: [180, 420, 170, 420, 180, 430, 170], gap: 230, width: 90 },
-  { name: 'Playa Grande', patterns: ['gate', 'gate', 'drift', 'gate', 'gate', 'gate'], centers: [160, 290, 440, 430, 300, 170], gap: 220, width: 104 },
+  { name: 'Playa Grande', patterns: ['gate', 'gate', 'drift', 'gate', 'rise', 'gate', 'drift'], centers: [180, 420, 170, 420, 180, 430, 170], gap: 230, width: 90 },
+  { name: 'Cabo Corrientes · Varese', patterns: ['gate', 'gate', 'drift', 'gate', 'gate', 'gate'], centers: [160, 290, 440, 430, 300, 170], gap: 220, width: 104 },
   { name: 'Torreón del Monje', patterns: ['sway', 'gate', 'sway', 'drift', 'gate', 'sway'], centers: [210, 400, 210, 430, 170, 390], gap: 214, width: 108 },
   { name: 'The hive is near', patterns: ['drift', 'sway', 'gate', 'drift', 'sway', 'gate'], centers: [160, 420, 170, 440, 180, 420], gap: 210, width: 112 },
 ];

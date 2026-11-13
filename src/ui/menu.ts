@@ -55,7 +55,7 @@ export function createGameMenu<Action extends string, Screen extends string>(roo
       <div class="game-menu-preferences" hidden><section class="game-menu-controls" aria-labelledby="${config.id}-help"><h2 id="${config.id}-help">How to play</h2><div class="game-menu-instructions"></div><p class="game-menu-key-guide"><b>P</b> Pause / Resume · <b>F</b> Fullscreen<br>In menus: <b>S</b> Sound<br>Escape goes back, pauses play, or exits fullscreen.</p></section></div>
     </div>
     <div class="game-menu-notices" aria-live="polite"><p class="game-menu-art-status" hidden></p><button type="button" class="game-menu-retry-art" hidden>Retry artwork</button><p class="game-menu-sound-status" hidden></p><p class="game-menu-display-status" hidden></p></div>
-    <footer class="game-menu-actions">${config.actions.map(action => `<button type="button" data-menu-action="${action.id}" class="${action.primary ? 'game-menu-primary' : ''}" hidden>${action.label}</button>`).join('')}<button type="button" class="game-menu-open-settings" hidden>Settings</button><button type="button" class="game-menu-back" hidden><span aria-hidden="true">← </span><span class="game-menu-back-label"></span></button><p class="game-menu-origin">Built by <a href="https://joacod.com" target="_blank" rel="noopener noreferrer">joacod</a> · from <a href="https://arcade.joacod.com/" target="_blank" rel="noopener noreferrer">Arcade Lab</a></p></footer>
+    <footer class="game-menu-actions">${config.actions.map(action => `<button type="button" data-menu-action="${action.id}" class="${action.primary ? 'game-menu-primary' : ''}" hidden>${action.label}</button>`).join('')}<button type="button" class="game-menu-open-settings" hidden>How to play</button><button type="button" class="game-menu-back" hidden><span aria-hidden="true">← </span><span class="game-menu-back-label"></span></button><p class="game-menu-origin">Built by <a href="https://joacod.com" target="_blank" rel="noopener noreferrer">joacod</a> · from <a href="https://arcade.joacod.com/" target="_blank" rel="noopener noreferrer">Arcade Lab</a></p></footer>
   </section>`;
   // HUD/footer wrapping must not constrain menu space or move its actions.
   // The stage retains its geometry while the menu uses the whole game viewport.
@@ -77,6 +77,7 @@ export function createGameMenu<Action extends string, Screen extends string>(roo
   const main = layer.querySelector<HTMLElement>('.game-menu-main')!;
   const preferences = layer.querySelector<HTMLElement>('.game-menu-preferences')!;
   const instructions = layer.querySelector<HTMLElement>('.game-menu-instructions')!;
+  preferences.prepend(utilities);
   if (typeof config.controls === 'string') instructions.innerHTML = config.controls;
   else instructions.append(config.controls);
   if (config.game) content.append(config.game);
@@ -94,7 +95,8 @@ export function createGameMenu<Action extends string, Screen extends string>(roo
   function showSettings(open: boolean) {
     if (open) { screenHeading = heading.textContent!; mainScroll = body.scrollTop; }
     settingsOpen = open;
-    heading.textContent = open ? 'Settings' : screenHeading;
+    layer.dataset.settings = String(open);
+    heading.textContent = open ? 'Flight guide' : screenHeading;
     name.hidden = !open && screen === 'title';
     main.hidden = open; preferences.hidden = !open;
     openSettings.hidden = open || screen !== 'title' && screen !== 'paused';
@@ -188,10 +190,11 @@ export function createGameMenu<Action extends string, Screen extends string>(roo
         settingsOpen = false; body.scrollTop = 0;
       }
       screen = next; root.dataset.screen = next; layer.hidden = next === 'playing';
+      layer.dataset.settings = String(settingsOpen);
       main.hidden = settingsOpen; preferences.hidden = !settingsOpen; back.hidden = !settingsOpen;
       openSettings.hidden = settingsOpen || next !== 'title' && next !== 'paused';
       origin.hidden = settingsOpen || next !== 'title';
-      heading.textContent = settingsOpen ? 'Settings' : nextHeading;
+      heading.textContent = settingsOpen ? 'Flight guide' : nextHeading;
       name.hidden = !settingsOpen && next === 'title';
       description.hidden = !description.textContent;
       const utilityScreen = next === 'title' || next === 'paused';

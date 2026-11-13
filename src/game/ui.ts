@@ -23,7 +23,7 @@ export function createUI(root: HTMLElement, surface: HTMLElement, signal: AbortS
     id: 'binweek', title: 'Binagora Week 2026', signal, pause,
     gameplayUI: root.querySelectorAll<HTMLElement>(':scope > header, :scope > footer, .cloudwake-flight-status'),
     onAction: act, onMute: mute, onFullscreen: () => act('fullscreen'), game: results.element,
-    controls: `<b>A little flight. A big reunion.</b><p>Hold Space, W, ↑, the playfield, or Rise to fly up. Release to fall. Slide with A / D, ← / →, the on-screen arrows, or a sideways drag. Your first press on Play or Continue also applies thrust.</p><p>Follow the alfajores, churros and rubber ducks. Every collectible starts at +25. Five in a row raise the multiplier, up to ×4. Missing one resets the streak. Collect ${flight.shieldFragments} to charge a Hive Shield: five seconds of protection, or one hit.</p><p>Avoid solid seaside structures and snack-hunting gulls. The upper and lower sea breezes cushion you. You have three lives. Event beacons save your route, score, streak and shield. Continue returns to that checkpoint, without refilling lives. Reach the last beacon to join the whole hive at the Hermitage.</p>`,
+    controls: `<div class="binweek-guide"><section><h3>Find your wings</h3><p>Hold <kbd>Space</kbd>, W, ↑, or the playfield to rise. Release to fall. Slide with A / D, ← / →, or sideways drag. Touch controls work too.</p></section><section><h3>Follow the snacks</h3><p>Alfajores, churros and rabas start at +25. Every five consecutive pickups raise your multiplier, up to ×4. A miss resets the streak. ${flight.shieldFragments} snacks charge a five-second, one-hit Hive Shield.</p></section><section><h3>Meet the hive</h3><p>Avoid stone structures and snack-stealing gulls. You have three lives. Orange # beacons save your progress. Continue restores that checkpoint without refilling lives. Reach the Hermitage to reunite.</p></section></div>`,
     actions: [menuActions.start, menuActions.resume, { id: 'continue', label: 'Continue', screens: ['crashed'], primary: true }, { ...menuActions.restart, screens: ['paused', 'crashed', 'defeat', 'victory'] }],
   });
   const header = menu.layer.querySelector('.game-menu-header')!;
@@ -31,7 +31,7 @@ export function createUI(root: HTMLElement, surface: HTMLElement, signal: AbortS
   header.prepend(mark);
   menu.layer.querySelector('.game-menu-eyebrow')!.textContent = 'MAR DEL PLATA, ARGENTINA';
   const subtitle = document.createElement('p'); subtitle.className = 'binweek-subtitle'; subtitle.textContent = 'The Hive Reunion'; header.append(subtitle);
-  const premise = document.createElement('div'); premise.className = 'binweek-premise'; premise.innerHTML = '<span>01 EL PUERTO</span><span>02 PLAYA GRANDE</span><span>03 THE HERMITAGE</span><p>Hold to rise. Release to fall.<br>Slide with A / D, arrows, or sideways drag.</p><code>npm run binweek</code>';
+  const premise = document.createElement('div'); premise.className = 'binweek-premise'; premise.innerHTML = '<span>5 coastal stops <i aria-hidden="true">·</i> a 2-minute escape</span><p><kbd>Hold</kbd> to rise. Release to fall.<br><small>A / D, arrows or drag to slide.</small></p>';
   results.element.before(premise);
   menu.layer.querySelector('.game-menu-notices')!.prepend(assetStatus);
   return {
@@ -56,7 +56,7 @@ export function createUI(root: HTMLElement, surface: HTMLElement, signal: AbortS
       setText($('[aria-label="Distance"]'), `${Math.floor(run.distance / 10)} m`);
       const multiplier = multiplierAt(run.chain);
       setText($('.cloudwake-fragments'), `${run.pickups} collectibles · Streak ×${multiplier}`);
-      setText($('.cloudwake-leg'), `${chapterAt(run.checkpoint.number) + 1} / 3 · ${chapterNames[chapterAt(run.checkpoint.number)]}`);
+      setText($('.cloudwake-leg'), `${chapterAt(run.checkpoint.number) + 1} / ${journeyLegs} · ${chapterNames[chapterAt(run.checkpoint.number)]}`);
       const remain = run.shieldUntil - run.elapsed, live = remain > 0;
       setText($('.cloudwake-shield-label'), live ? `HIVE SHIELD ${remain.toFixed(1)}s` : `SHIELD ${run.shieldCharge}/${flight.shieldFragments}`);
       setProperty($<HTMLProgressElement>('.cloudwake-shield progress'), 'value', live ? remain / flight.shieldSeconds : run.shieldCharge / flight.shieldFragments);
