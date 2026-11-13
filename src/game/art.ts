@@ -5,6 +5,7 @@ export const urls = {
   gull: new URL('./art/gull.webp', import.meta.url).href,
   scenery: new URL('./art/scenery.webp', import.meta.url).href,
   reviewer: new URL('./art/reviewer.webp', import.meta.url).href,
+  quartzite: new URL('./art/quartzite.webp', import.meta.url).href,
   sky: new URL('./art/coast.webp', import.meta.url).href,
   grande: new URL('./art/grande.webp', import.meta.url).href,
   varese: new URL('./art/varese.webp', import.meta.url).href,
@@ -13,4 +14,4 @@ export const urls = {
   hotel: new URL('./art/hotel.webp', import.meta.url).href,
   logo: new URL('./art/binagora-logo.png', import.meta.url).href,
 };
-export const sizes = { courier: [1024,1024], objects: [1024,1024], gull: [1536,512], scenery: [1024,1024], reviewer: [768,384], sky: [1536,1024], grande: [1536,1024], varese: [1536,1024], beach: [1536,1024], central: [1536,1024], hotel: [1536,1024], logo: [474,132] } as const;
+export const sizes = { courier: [1024,1024], objects: [1024,1024], gull: [1536,512], scenery: [1024,1024], reviewer: [768,384], quartzite: [512,512], sky: [1536,1024], grande: [1536,1024], varese: [1536,1024], beach: [1536,1024], central: [1536,1024], hotel: [1536,1024], logo: [474,132] } as const;

@@ -34,6 +34,7 @@ await sharp({create:{width:1536,height:512,channels:4,background:'#00000000'}})
 await sharp(file('sources/scenery.png')).resize(1024,1024).webp({quality:92,alphaQuality:100,effort:6}).toFile(file('scenery.webp'));
 await sharp(file('sources/reviewer.png')).resize(768,384,{fit:'contain',background:'#00000000'})
   .webp({quality:92,alphaQuality:100,effort:6}).toFile(file('reviewer.webp'));
+await sharp(file('sources/quartzite.png')).resize(512,512).webp({quality:90,effort:6}).toFile(file('quartzite.webp'));
 for (const role of ['coast','grande','varese','beach','central','hotel']) {
   await sharp(file(`sources/${role}.png`)).resize(1536,1024).webp({quality:90,effort:6}).toFile(file(`${role}.webp`));
 }
