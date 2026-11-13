@@ -57,10 +57,70 @@
   .cloudwake-app .cloudwake-touch button { min-height: 36px; min-width: 44px; }
   .cloudwake-app .cloudwake-touch [data-control='thrust'] { min-width: 108px; min-height: 36px; }
 }
-
-.cloudwake-app { background: #102f3a; --menu-accent: #f5d79f; }
-.cloudwake-app .cloudwake-hud { background: linear-gradient(110deg, #183f49, #102f3a); border-color: #e6c68a50; }
-.cloudwake-app .cloudwake-brand { color: #ffe4b6; text-shadow: 0 1px 12px #e5b75b20; }
-.cloudwake-app .cloudwake-footer { background: #102f3a; }
-.cloudwake-app :is(.cloudwake-leg, .cloudwake-shield) { background: #102f3aeb; border-color: #e6c68a60; box-shadow: 0 3px 14px #0b293630; }
-.cloudwake-app .game-menu { background: radial-gradient(ellipse at 0 0, #3d72744d, transparent 70%), #102f3af7; border-color: #edce9680; box-shadow: 0 24px 80px #07202d66, inset 0 1px #ffebbd20; }
+/* Event identity: warm paper, Binagora orange and charcoal, Atlantic scenery. */
+.cloudwake-app { background: #fff8e9; color: #323232; --menu-accent: #F59E2B; }
+.cloudwake-app .cloudwake-hud { background: #fff8e9; border-color: #4a4a4a24; }
+.cloudwake-app .cloudwake-brand { color: #4a4a4a; letter-spacing: .04em; font-size: 17px; }
+.cloudwake-app .cloudwake-brand em { color: #995500; font-style: normal; }
+.cloudwake-app .cloudwake-brand span, .cloudwake-app .cloudwake-hud small { color: #686357; }
+.cloudwake-app .cloudwake-footer { background: #fff8e9; border-color: #4a4a4a24; }
+.cloudwake-app .cloudwake-fragments { color: #6f4c20; }
+.cloudwake-app .cloudwake-hint { color: #58574e; }
+.cloudwake-app :is(.cloudwake-hud,.cloudwake-footer) button { color: #323232; background: #fff; border-color: #a199884f; }
+.cloudwake-app .cloudwake-touch button:is([data-held],[data-thrusting='true']) { background: #F59E2B; border-color: #91580e; }
+.cloudwake-app :is(.cloudwake-leg,.cloudwake-shield) { background: #fff8e9ed; color: #4a4a4a; border-color: #b6ad963b; box-shadow: 0 3px 12px #45413912; }
+.cloudwake-app .cloudwake-shield[data-live='true'] { color: #215b63; border-color: #3f8c95; }
+.cloudwake-app .cloudwake-shield progress, .cloudwake-app .cloudwake-shield progress::-webkit-progress-bar { background: #e6dcc7; }
+.cloudwake-app .cloudwake-shield progress::-webkit-progress-value { background: #c77a13; }
+.cloudwake-app .cloudwake-shield[data-live='true'] progress::-webkit-progress-value { background: #3f8c95; }
+.cloudwake-app .game-menu-layer { background: linear-gradient(90deg,#fff4df55,transparent 75%); place-items: center start; padding: clamp(18px,4vw,64px); }
+.cloudwake-app .game-menu { background: #fffaf0f7; color: #323232; border: 1px solid #e4d8c1; border-radius: 22px; width: min(470px,100%); box-shadow: 0 18px 70px #5c583324; }
+.cloudwake-app .game-menu::before { background: #F59E2B; box-shadow: none; }
+.cloudwake-app .binweek-logo { display: block; width: min(250px,100%); height: auto; margin: 4px 0 25px; padding: 7px 0; }
+.cloudwake-app .game-menu-eyebrow { color: #946020; font-size: 9px; letter-spacing: .14em; }
+.cloudwake-app .game-menu h1 { font: 800 clamp(30px,4.1vw,49px)/1.04 'Avenir Next',system-ui,sans-serif; letter-spacing: -.055em; color: #323232; }
+.cloudwake-app .binweek-subtitle { font: italic 24px/1.2 Georgia,serif; color: #9b5f11; margin: 10px 0 0; }
+.cloudwake-app .game-menu-description { color: #58574e; max-width: 36ch; }
+.cloudwake-app .game-menu-actions { background: #f4ead733; border-color: #e5dccb; }
+.cloudwake-app .game-menu button, .cloudwake-app .game-menu-actions button:not(.game-menu-primary) { background: #fffdf8; border-color: #d7cbb5; color: #4a4a4a; box-shadow: none; }
+.cloudwake-app .game-menu button:enabled:hover { background: #f8e4c2; border-color: #b57a2b; color: #323232; box-shadow: none; }
+.cloudwake-app .game-menu-actions .game-menu-primary { background: #F59E2B; color: #323232; border-color: #de8b21; box-shadow: none; }
+.cloudwake-app .game-menu-actions .game-menu-primary:enabled:hover { background: #f8b757; box-shadow: none; }
+.cloudwake-app .game-menu-utilities button { color: #6b6254; font-size: 11px; }
+.cloudwake-app .game-menu-origin, .cloudwake-app .game-menu-origin a { color: #756c5e; }
+.cloudwake-app .game-menu-controls, .cloudwake-app .game-menu-controls :is(b,h2), .cloudwake-app .menu-readout { color: #4a4a4a; }
+.cloudwake-app .menu-readout { background: #f3ead8; border-color: #e5dccb; box-shadow: none; }
+.cloudwake-app .game-menu-notices { color: #915800; }
+.binweek-premise { border-top: 1px solid #e5dccb; padding-top: 14px; color: #5f655b; }
+.binweek-premise > span { display: block; font: 600 9px/1.8 monospace; letter-spacing: .06em; }
+.binweek-premise p { font-size: 12px; line-height: 1.6; }
+.binweek-premise code { color: #9b6a26; font-size: 10px; }
+.cloudwake-app[data-screen='victory'] .game-menu-layer { padding: 20px; place-items: stretch; background: linear-gradient(#fff8e9ee,transparent 25%,transparent 72%,#fff8e9f5); }
+.cloudwake-app[data-screen='victory'] .game-menu { width: 100%; border: 0; background: none; box-shadow: none; text-align: center; overflow: visible; }
+.cloudwake-app[data-screen='victory'] .game-menu::before { display: none; }
+.cloudwake-app[data-screen='victory'] .game-menu-header { padding: 8px 0; }
+.cloudwake-app[data-screen='victory'] .game-menu-eyebrow { justify-content: center; margin-bottom: 8px; }
+.cloudwake-app[data-screen='victory'] .game-menu h1 { font-size: clamp(24px,3.5vw,42px); }
+.cloudwake-app[data-screen='victory'] .game-menu-body { margin-top: auto; padding: 0; flex: none; }
+.cloudwake-app[data-screen='victory'] .game-menu-main { display: flex; flex-direction: column; align-items: center; gap: 0; }
+.cloudwake-app[data-screen='victory'] .game-menu-description { margin-bottom: 3px; color: #323232; font-weight: 600; }
+.cloudwake-app[data-screen='victory'] .menu-readout { padding: 0; border: 0; background: none; font-size: 12px; }
+.cloudwake-app[data-screen='victory'] .game-menu-actions { justify-content: center; border: 0; padding: 8px 0 0; background: none; }
+@media (max-width:600px) {
+  .cloudwake-app .game-menu-layer { place-items: center; padding: 14px; }
+  .cloudwake-app .binweek-logo { width: 206px; margin-bottom: 16px; }
+  .cloudwake-app .cloudwake-brand { font-size: 12px; }
+  .cloudwake-app .game-menu h1 { font-size: 36px; }
+  .cloudwake-app .binweek-subtitle { font-size: 21px; }
+  .cloudwake-app .game-menu-eyebrow { font-size: 8px; }
+  .cloudwake-app[data-screen='victory'] .game-menu-layer { padding: 15px 14px; }
+  .cloudwake-app[data-screen='victory'] .game-menu h1 { font-size: 27px; }
+  .cloudwake-app[data-screen='victory'] .game-menu-actions .game-menu-primary { flex-basis: auto; }
+}
+@media (max-height:650px) {
+  .cloudwake-app .binweek-logo { width: 170px; margin-bottom: 8px; }
+  .cloudwake-app .binweek-premise > span { display: inline-block; font-size: 8px; margin-right: 8px; }
+  .cloudwake-app .binweek-premise p { margin-block: 5px; }
+  .cloudwake-app .binweek-premise { padding-top: 6px; }
+  .cloudwake-app .game-menu-description { margin-bottom: 8px; }
+}

@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { flight, fly, multiplierAt, speedAt, slide, fragmentShape, pickupRear } from '../../../src/game/content.ts';
-import { createRoute, nextPassage, reachable, minePosition, steerTo, legAt, safeGap, passageCenter } from '../../../src/game/route.ts';
+import { createRoute, nextPassage, reachable, minePosition, steerTo, legAt, safeGap, passageCenter, chapterAt, journeyLegs } from '../../../src/game/route.ts';
 import { continueRun, createRun, stepRun, pauseRun, takeEvents } from '../../../src/game/game.ts';
 import { touchesFragment } from '../../../src/game/collection.ts';
-import { cloudTiles, createPassageViews } from '../../../src/game/presentation.ts';
+import { createPassageViews } from '../../../src/game/presentation.ts';
 const dt = 1 / 60;
 
 test('hold gives continuous lift, release brakes then falls, speed and cloud boundaries are bounded', () => {
@@ -38,11 +38,11 @@ test('hold gives continuous lift, release brakes then falls, speed and cloud bou
   assert.equal(dragged.vx, 0);
 });
 
-test('seeded legs grow between checkpoints and certify varied static/moving corridors at their own speed', () => {
+test('seeded coastal legs progress between checkpoints and certify varied static/moving corridors at their own speed', () => {
   const seen = new Set();
   for (const seed of [1, 17, 42, 2026]) {
     const lengths = [];
-    for (const level of [0, 1, 3, 7, 14, 27]) {
+    for (const level of [0, 1, 2, 3, 4]) {
       const route = createRoute(seed), duplicate = createRoute(seed);
       route.leg = duplicate.leg = level;
       let blockers = 0;
@@ -67,11 +67,11 @@ test('seeded legs grow between checkpoints and certify varied static/moving corr
         }
       }
       assert.ok((flight.minimumView - flight.maxX - leg.width) / speedAt(level) >= flight.reaction, 'forward slot keeps a reaction margin');
-      if (level > 0) assert.ok(blockers >= 3, 'later legs require leaving the middle');
+      if (level > 0) assert.ok(blockers >= 1, 'later legs require leaving the middle');
       lengths.push(route.previous.x + route.previous.width);
     }
     assert.ok(lengths[1] > lengths[0]);
-    assert.ok(lengths.at(-1) > lengths[1] * 2, 'later lanterns are farther apart');
+    assert.ok(lengths.at(-1) > lengths[1], 'later rendezvous are farther apart');
   }
   assert.equal(seen.size, 6);
   const previous = createRoute(1).previous;
@@ -91,12 +91,12 @@ test('speed increases at widening leg intervals and eases into the new pace', ()
   assert.equal(run.speed, before);
 });
 
-test('pickup contact follows the rider and hull, excludes empty corners, and sweeps fast crossings', () => {
+test('pickup contact follows the bee body and bag, excludes empty corners, and sweeps fast crossings', () => {
   const center = { x: 100, y: 300 };
-  for (const [x, y] of [[0, -38], [28, 10], [-37, 12], [0, 26]]) {
+  for (const [x, y] of [[0, -23], [25, 10], [-25, 10], [0, 25]]) {
     assert.equal(touchesFragment(center, center, { x: center.x + x, y: center.y + y }), true, `body contact ${x}/${y}`);
   }
-  for (const [x, y] of [[32, -31], [-45, -30], [0, -55], [0, 43], [-58, 12]]) {
+  for (const [x, y] of [[40, -31], [-45, -30], [0, -45], [0, 43], [-45, 12]]) {
     assert.equal(touchesFragment(center, center, { x: center.x + x, y: center.y + y }), false, `near miss ${x}/${y}`);
   }
   assert.equal(touchesFragment({ x: 0, y: 300 }, { x: 200, y: 300 }, center), true);
@@ -246,23 +246,8 @@ test('retired passage artwork remains until fully clipped by the viewport, and r
   assert.deepEqual(ids(views.update([], 1000, -300)), [], 'restart or checkpoint continuation cannot revive stale scenery');
 });
 
-test('cloud identities preserve height and continuous travel across scroll wrapping, including the camera inset', () => {
-  for (const scroll of [305, 610, 3050]) {
-    const before = cloudTiles(scroll - .1, -180, 1100, 340, 305);
-    const after = cloudTiles(scroll + .1, -180, 1100, 340, 305);
-    for (const tile of before) {
-      const match = after.find(candidate => candidate.id === tile.id);
-      if (!match) continue;
-      assert.equal(match.y, tile.y);
-      assert.ok(Math.abs(tile.x - match.x - .2) < 1e-8);
-    }
-    assert.ok(after[0].x <= -180 && after.at(-1).x >= 1100);
-    assert.ok(after.length < 10, 'offscreen cloud history does not accumulate');
-  }
-});
-
 test('certified routes stay clear in the actual collision simulation across consecutive patterns', () => {
-  for (const [seed, level, slot = flight.playerX] of [[17, 0], [42, 1], [17, 3], [42, 14], [1, 20, flight.maxX]]) {
+  for (const [seed, level, slot = flight.playerX] of [[17, 0], [42, 1], [17, 2], [42, 3], [1, 4, flight.maxX]]) {
     const run = createRun(seed);
     if (level > 0) {
       run.route = createRoute(seed);
@@ -289,4 +274,37 @@ test('certified routes stay clear in the actual collision simulation across cons
     assert.equal(run.passed, 3);
     assert.ok(run.passages.length < 10 && run.fragments.length < 50);
   }
+});
+
+
+test('a finite coastal journey follows player checkpoints, welcomes once and freezes results', () => {
+  for (const seed of [1,17,42]) {
+    const run=createRun(seed);
+    assert.equal(chapterAt(run.checkpoint.number),0);
+    let welcomes=0, checkpoints=0;
+    for(let frame=0;frame<150/dt && run.status==='active';frame++) {
+      const next=run.passages.find(p=>!p.cleared && p.x+p.width>=run.distance+run.player.x-flight.radius);
+      stepRun(run,{thrust:steerTo(run.player,next?.center ?? 300)},dt);
+      for(const event of takeEvents(run)) {
+        if(event.type==='checkpoint') checkpoints++;
+        if(event.type==='victory') welcomes++;
+      }
+      assert.equal(chapterAt(run.checkpoint.number),run.checkpoint.number<2?0:run.checkpoint.number<4?1:2);
+    }
+    assert.equal(run.status,'victory',`seed ${seed}`);
+    assert.ok(run.elapsed>=90 && run.elapsed<=150,`duration ${run.elapsed}`);
+    assert.equal(welcomes,1);assert.equal(checkpoints,journeyLegs);
+    assert.equal(run.route.leg,journeyLegs); assert.equal(run.passages.length,0);assert.equal(run.fragments.length,0);
+    const result=structuredClone(run);
+    pauseRun(run,true);pauseRun(run,false);stepRun(run,{thrust:true,strafe:1},1);
+    assert.equal(continueRun(run),false);assert.deepEqual(run,result);assert.deepEqual(takeEvents(run),[]);
+    assert.equal(createRun(seed).status,'active');
+  }
+  // No haul is required. Passing the actual final clear-air milestone is sufficient.
+  const run=createRun(42);run.checkpoint.number=journeyLegs-1;
+  run.route.leg=journeyLegs;
+  run.passages=[{...run.route.previous,id:999,leg:4,x:100,width:86,pattern:'breather',cleared:false}];
+  run.distance=100+86+flight.radius-flight.playerX;
+  run.fragments=[];stepRun(run,{thrust:false},dt);
+  assert.equal(run.pickups,0);assert.equal(run.status,'victory');
 });

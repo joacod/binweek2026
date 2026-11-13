@@ -7,14 +7,15 @@ export const flight = {
   minimumView: 560, reaction: .28, fragmentPoints: 25, lives: 3, mineRadius: 35,
   shieldFragments: 30, shieldSeconds: 5,
 } as const;
-/** Pickup silhouette covers helmet/rider/scooter but excludes scarf and exhaust.
- * Its convex envelope is separate from the forgiving hazard-contact radius. */
+/** Bee body and travel bag, excluding decorative wings and antennae.
+ * The forgiving circular hazard body remains unchanged. */
 export const pickupHull = [
-  { x: -13, y: -38 }, { x: 8, y: -38 }, { x: 15, y: -23 },
-  { x: 29, y: 2 }, { x: 29, y: 16 }, { x: 17, y: 26 },
-  { x: -28, y: 25 }, { x: -40, y: 15 }, { x: -38, y: 3 },
+  { x: -25, y: -10 }, { x: -12, y: -23 }, { x: 12, y: -23 },
+  { x: 25, y: -10 }, { x: 25, y: 12 }, { x: 10, y: 25 },
+  { x: -12, y: 25 }, { x: -25, y: 10 },
 ] as const;
-export const fragmentShape = { halfWidth: 10, halfHeight: 15 } as const;
+/** Wrapped rewards share one small diamond envelope, including swept contact. */
+export const fragmentShape = { halfWidth: 13, halfHeight: 13 } as const;
 export const pickupRear = Math.min(...pickupHull.map(point => point.x));
 export const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(high, value));
 /** Speed steps after 2 legs, then 3 more, then 4 more, and so on. */
@@ -50,7 +51,7 @@ export function fly(player: { y: number; vy: number }, thrust: boolean, dt: numb
     : flight.gravity + (player.vy < 0 ? flight.braking : 0);
   player.vy = clamp(player.vy + acceleration * dt, -flight.upLimit, flight.downLimit);
   player.y += player.vy * dt;
-  // Cloud banks cushion the boundaries; the crystal structures are the danger.
+  // Sea breezes cushion the boundaries; solid structures are the danger.
   if (player.y < flight.ceiling) { player.y = flight.ceiling; player.vy = Math.max(0, player.vy); }
   if (player.y > flight.floor) { player.y = flight.floor; player.vy = Math.min(0, player.vy); }
 }

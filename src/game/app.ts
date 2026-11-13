@@ -12,7 +12,7 @@ import { createSound } from './sound.ts';
 import { createUI, type Intent, type Screen } from './ui.ts';
 import './style.css';
 
-export function mountCloudwake(container: HTMLElement, fullscreen: FullscreenControl): GameSession {
+export function mountBinweek(container: HTMLElement, fullscreen: FullscreenControl): GameSession {
   let disposed = false, screen: Screen = 'title', run = createRun();
   const clock = createClock();
   let outcomeAt = 0;
@@ -24,8 +24,8 @@ export function mountCloudwake(container: HTMLElement, fullscreen: FullscreenCon
     disposeAll(() => input?.clear(), () => presentation?.dispose(), () => sound?.dispose(), () => host?.dispose());
   }
   try {
-    host = createHost(container, { fullscreen, className: 'cloudwake-app', label: 'Cloudwake',
-      surfaceLabel: 'Cloudwake playfield. Hold Space, mouse or touch to rise. Release to fall. A, D or sideways drag slides across the view. P pauses.',
+    host = createHost(container, { fullscreen, className: 'cloudwake-app', label: 'Binagora Week 2026',
+      surfaceLabel: 'Binagora Week playfield. Hold Space, mouse or touch to rise. Release to fall. A, D or sideways drag slides across the view. P pauses.',
       onDisplayChange: suspend, onFullscreenChange: () => ui.fullscreen(host.fullscreenAvailable, host.fullscreen) });
     sound = createSound(message => { if (!disposed) ui.soundStatus(message); });
     ui = createUI(host.root, host.surface, host.signal, act, value => sound.setMuted(value));
@@ -102,12 +102,12 @@ export function mountCloudwake(container: HTMLElement, fullscreen: FullscreenCon
         const steps = clock.advance(now);
         for (let i = 0; i < steps && run.status === 'active'; i++) stepRun(run, input.read(), FIXED_STEP);
         const events = takeEvents(run); presentation.consume(events); sound.consume(events, run.thrust);
-        if (run.status === 'crashed' || run.status === 'defeat') {
+        if (run.status === 'crashed' || run.status === 'defeat' || run.status === 'victory') {
           outcomeAt = now;
           transition(run.status);
         }
       }
-      try { presentation.draw(run, host, screen === 'title' ? now / 1000 : undefined, screen === 'crashed' || screen === 'defeat' ? (now - outcomeAt) / 1000 : 0); }
+      try { presentation.draw(run, host, screen === 'title' ? now / 1000 : undefined, screen === 'crashed' || screen === 'defeat' || screen === 'victory' ? (now - outcomeAt) / 1000 : 0); }
       catch { recoverPresentation(); }
       ui.update(run);
     });

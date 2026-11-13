@@ -1,6 +1,6 @@
-# Cloudwake
+# Binagora Week 2026
 
-An endless sky-courier flight, extracted from Arcade Lab's Cloudwake Deluxe for **binweek2026**. Hold to rise, release to fall, and slide between sunlit ruins. Collect lost light, raise a shield, and continue from lantern checkpoints while lives remain.
+**The Hive Reunion.** Fly Binagora’s bee across Mar del Plata, gather alfajores and playful finds, and join the whole hive at the Hermitage Hotel. A short coastal route, three lives and in-memory checkpoint continuation make the reunion replayable.
 
 ## Run locally
 
@@ -28,4 +28,4 @@ For future work, see [architecture](docs/architecture.md), [game design](docs/ga
 
 ## Origin
 
-Cloudwake Deluxe was extracted from [Arcade Lab](https://github.com/joacod/arcade-lab). Built by [joacod](https://joacod.com). This copy is independent; keep, update, or remove this note as the game diverges. The extracted commit and source path are in the [architecture origin](docs/architecture.md#origin) section.
+The original flight systems were extracted from [Arcade Lab](https://github.com/joacod/arcade-lab). Built by [joacod](https://joacod.com). The event game now owns its visual identity and finite route. The extracted commit and source path are in the [architecture origin](docs/architecture.md#origin) section.

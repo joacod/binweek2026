@@ -2,23 +2,14 @@ import { prepareImages, validateImageDimensions, type PreparedImages } from '../
 import { urls, sizes } from './art.ts';
 import type { Run, FlightEvent } from './game.ts';
 import { flight, viewScale, fragmentShape } from './content.ts';
-import { minePosition, passageCenter, type Passage } from './route.ts';
+import { minePosition, passageCenter, chapterAt, type Passage } from './route.ts';
 
 /** Whole-cel roles, drawing footprints and anchors are independent of physics. */
-const courier = { cell: 512, size: 90, anchorX: .58, anchorY: .52, glide: [0, 3], thrust: [1] } as const;
-const beacon = { cell: 512, size: 124, anchorX: .52, anchorY: .48 } as const;
+const courier = { cell: 512, size: 94, anchorX: .55, anchorY: .60, glide: [0, 3], thrust: [1, 3] } as const;
+const beacon = { size: 124, anchorX: .52 } as const;
 interface Spark { x: number; y: number; vx: number; vy: number; start: number; life: number; color: string }
 interface ScorePop { x: number; y: number; start: number; points: number }
 interface Viewport { width: number; height: number; ratio: number }
-
-/** Stable world identities keep cloud silhouettes continuous across scroll wraps. */
-export function cloudTiles(scroll: number, left: number, right: number, size: number, spacing: number) {
-  const tiles = [];
-  for (let id = Math.floor((scroll + left - size) / spacing); id <= Math.ceil((scroll + right) / spacing); id++) {
-    tiles.push({ id, x: id * spacing - scroll, y: Math.sin(id * 7.2) * 24 });
-  }
-  return tiles;
-}
 
 export function flightView(width: number, height: number) {
   const scale = viewScale(width, height);
@@ -78,7 +69,7 @@ export function createPresentation(surface: HTMLElement) {
       if (event.type === 'crash') crashTime = lastTime;
       if (event.type === 'checkpoint') { checkpointTime = lastTime; checkpointAt = event.x; }
       if (event.type === 'pickup' && scores.length < 12) scores.push({ x: event.x, y: event.y, start: lastTime, points: event.points });
-      if (motion.matches || event.type === 'checkpoint') continue;
+      if (motion.matches || event.type === 'checkpoint' || event.type === 'victory') continue;
       const count = event.type === 'crash' || event.type === 'shield-hit' ? 22 : 7;
       for (let i = 0; i < count && sparks.length < 90; i++) {
         const angle = i / count * Math.PI * 2;
@@ -96,7 +87,7 @@ export function createPresentation(surface: HTMLElement) {
     const images = art?.images ?? {};
     if (!images.courier) return;
     lastTime = run.elapsed;
-    const time = titleTime ?? run.elapsed + Math.min(.8, outcomeAge), decorative = motion.matches ? 0 : time;
+    const time = titleTime ?? run.elapsed + Math.min(run.status === 'victory' ? 4 : .8, outcomeAge), decorative = motion.matches ? 0 : time;
     const distance = titleTime !== undefined ? decorative * 38 : run.distance;
     const view = flightView(width, height);
     ctx.reset();
@@ -109,26 +100,90 @@ export function createPresentation(surface: HTMLElement) {
     const skyOffset = motion.matches ? 0 : distance * .065 * view.scale;
     const tile = Math.floor(skyOffset / skyWidth), scroll = skyOffset % skyWidth;
     for (let i = -1; i < 2; i++) {
-      ctx.save(); ctx.translate(i * skyWidth - scroll, (height - skyHeight) / 2);
+      ctx.save(); ctx.translate(i * skyWidth - scroll - Math.max(0, skyWidth-width)*.55, (height - skyHeight) / 2);
       if ((tile + i) % 2 !== 0) { ctx.translate(skyWidth, 0); ctx.scale(-1, 1); }
-      ctx.drawImage(images.sky!, 0, 0, skyWidth, skyHeight); ctx.restore();
+      ctx.drawImage(chapterAt(run.checkpoint.number) === 0 ? images.sky! : chapterAt(run.checkpoint.number) === 1 ? images.beach! : images.central!, 0, 0, skyWidth, skyHeight); ctx.restore();
     }
     ctx.setTransform(view.scale * ratio, 0, 0, view.scale * ratio, view.x * view.scale * ratio, view.y * ratio);
     const worldWidth = view.width;
-    function drawBeacon(frame: number, x: number, y: number, size: number = beacon.size) {
-      ctx.drawImage(images.checkpoint!, frame % 2 * beacon.cell, Math.floor(frame / 2) * beacon.cell, beacon.cell, beacon.cell,
-        x - size * beacon.anchorX, y - size * beacon.anchorY, size, size);
+    function bee(frame: number, x: number, y: number, size: number = courier.size, flip = false) {
+      ctx.save(); ctx.translate(x, y); if (flip) ctx.scale(-1, 1);
+      ctx.drawImage(images.courier!, frame % 2 * 512, Math.floor(frame / 2) * 512, 512, 512,
+        -size * courier.anchorX, -size * courier.anchorY, size, size); ctx.restore();
     }
-    function clouds(rate: number, y: number, alpha: number, size: number, spacing: number) {
-      const offset = motion.matches ? 0 : distance * rate;
-      ctx.globalAlpha = alpha;
-      for (const tile of cloudTiles(offset, -view.x, worldWidth - view.x, size, spacing)) {
-        ctx.drawImage(images.cloud!, tile.x, y + tile.y, size, size * .394);
+    function label(text: string, x: number, y: number, font = 10) {
+      ctx.font = `700 ${font}px system-ui`; ctx.textAlign = 'center';
+      const w = ctx.measureText(text).width + 18;
+      ctx.fillStyle = '#fff8e9f0'; ctx.fillRect(x - w / 2, y - 13, w, 22);
+      ctx.fillStyle = '#4a4a4a'; ctx.fillText(text, x, y + 2);
+    }
+    function reviewer(x: number, y: number, size = 1) {
+      ctx.save(); ctx.translate(x,y); ctx.scale(size,size); ctx.fillStyle = '#6c7875';
+      ctx.beginPath(); ctx.ellipse(0,0,26,12,-.12,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(15,-15,12,20,-.2,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#323232'; ctx.beginPath(); ctx.arc(19,-24,2,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#f8c477'; ctx.fillRect(-35,-38,36,22); ctx.fillStyle='#4a4a4a'; ctx.fillRect(-19,-16,2,20);
+      ctx.font='800 10px system-ui'; ctx.textAlign='center'; ctx.fillText('LGTM',-17,-23); ctx.restore();
+    }
+    // A few coworkers inhabit the coast. These never enter collision or route state.
+    if (titleTime !== undefined || run.status !== 'victory') {
+      const scenicX = worldWidth - view.x - 100;
+      bee(2, scenicX, 500 + Math.sin(decorative * 2) * 3, 49, true);
+      if (chapterAt(run.checkpoint.number) === 0) reviewer(scenicX - 65, 555, .8);
+      else if (chapterAt(run.checkpoint.number) === 1) label('Works on my beach.', scenicX - 35, 553);
+    }
+    function drawBeacon(frame: number, x: number, y: number) {
+      ctx.save(); ctx.translate(x,y);
+      ctx.fillStyle = frame ? '#F59E2B' : '#fff8e9'; ctx.strokeStyle = '#a4661c'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.roundRect(-22,-28,44,56,12); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#4a4a4a'; ctx.font='900 34px system-ui'; ctx.textAlign='center'; ctx.fillText('#',0,12);
+      ctx.fillStyle='#f59e2b'; ctx.beginPath(); ctx.moveTo(-8,-31);ctx.lineTo(0,-43);ctx.lineTo(8,-31);ctx.fill(); ctx.restore();
+    }
+    function stone(x: number, y: number, w: number, h: number, ceiling: boolean) {
+      ctx.fillStyle='#797d76'; ctx.fillRect(x+3,y,w-6,h);
+      ctx.fillStyle='#a3a493'; ctx.fillRect(x+9,y,w-18,h);
+      ctx.strokeStyle='#5e655b'; ctx.lineWidth=2;
+      for(let row=0;row<h;row+=36) {
+        ctx.beginPath();ctx.moveTo(x+9,y+row);ctx.lineTo(x+w-9,y+row);ctx.stroke();
+        const joint=x+w*(row%72===0?.38:.67);ctx.beginPath();ctx.moveTo(joint,y+row);ctx.lineTo(joint,Math.min(y+row+36,y+h));ctx.stroke();
       }
-      ctx.globalAlpha = 1;
+      const edge=ceiling?y+h-12:y;
+      ctx.fillStyle='#b66544';ctx.fillRect(x,edge,w,12);
+      ctx.fillStyle='#f8c477';for(let i=9;i<w-8;i+=21) {ctx.beginPath();ctx.moveTo(x+i,edge+2);ctx.lineTo(x+i+7,edge+2);ctx.lineTo(x+i+3,edge+10);ctx.lineTo(x+i-4,edge+10);ctx.fill();}
     }
-    clouds(.12, 325, .22, 370, 410);
-    clouds(.32, 475, .68, 300, 370);
+    const destination = run.passages.find(p => p.leg === 4 && p.pattern === 'breather');
+    if (destination && run.checkpoint.number === 4) {
+      const arrivalX = destination.x - distance + 170;
+      ctx.drawImage(images.hotel!, arrivalX, 225, 430, 287);
+      for(let i=0;i<8;i++) bee(i%4,arrivalX+60+i*38,535,45,i%2===0);
+    }
+    if (run.status === 'victory') {
+      // Fit the complete landmark and bounded crowd into the visible CSS viewport.
+      const left=-view.x, available=worldWidth, center=left+available/2;
+      const hotelWidth=Math.min(available*.96,600), hotelHeight=hotelWidth/1.5;
+      ctx.fillStyle='#e5cea0';ctx.fillRect(left,445,available,height/view.scale);
+      ctx.drawImage(images.hotel!,center-hotelWidth/2,445-hotelHeight,hotelWidth,hotelHeight);
+      const columns=available<700?9:13, rows=3, spacing=Math.min(57,(available-36)/columns);
+      for(let row=0;row<rows;row++) for(let col=0;col<columns;col++) {
+        const id=row*columns+col, x=center+(col-(columns-1)/2)*spacing+(row%2?5:-5);
+        const y=454+row*29+(motion.matches?0:Math.sin(decorative*2.4+id)*3);
+        bee(id%4,x,y,Math.min(56,spacing*1.55),id%3===0);
+        if(id%7===0) {ctx.fillStyle='#f59e2b';ctx.fillRect(x+7,y+4,8,7);}
+        if(id%11===0) {ctx.fillStyle='#3b818b';ctx.fillRect(x-5,y+8,18,4);}
+      }
+      reviewer(center-hotelWidth*.42,524,.7);
+      ctx.fillStyle='#8e6040';ctx.fillRect(center+hotelWidth*.32,505,65,6);ctx.fillRect(center+hotelWidth*.32+7,511,3,20);ctx.fillRect(center+hotelWidth*.32+55,511,3,20);
+      for(let i=0;i<4;i++)ctx.drawImage(images.objects!,0,0,512,512,center+hotelWidth*.32+i*13,488,20,20);
+      label('Merienda deployed.',center+hotelWidth*.32+32,550,9);
+      if(!motion.matches && outcomeAge<4) for(let i=0;i<44;i++) {
+        const t=Math.min(4,outcomeAge), x=left+((i*137.3+t*12)%available), y=70+((i*41+t*(30+i%5*5))%410);
+        ctx.fillStyle=['#F59E2B','#f8c477','#fff8e9','#4a4a4a'][i%4]!;ctx.fillRect(x,y,3,7);
+      }
+      if(!motion.matches && outcomeAge<3.5) {
+        const t=Math.min(1,outcomeAge/3.5);bee(1,center-available*.35*(1-t),370+110*t,84);
+      }
+      return;
+    }
     for (const passage of passages.update(run.passages, distance, -view.x)) {
       const x = passage.x - distance;
       if (x > worldWidth + 120 || x + passage.width < -view.x - 120) continue;
@@ -137,7 +192,7 @@ export function createPresentation(surface: HTMLElement) {
         const markerWorld = passage.x + passage.width + flight.radius;
         const active = passage.cleared;
         const age = active && Math.abs(markerWorld - checkpointAt) < 90 ? time - checkpointTime : Infinity;
-        // One opening, one bloom, then the steady crystal. The pulse cel is not a loop.
+        // One opening, one bloom, then the steady event badge. The activation is not a loop.
         const frame = !active ? 0 : motion.matches || age >= .48 ? 2 : age < .16 ? 1 : 3;
         ctx.fillStyle = active ? '#9cf6e230' : '#ffdf9820';
         ctx.beginPath(); ctx.ellipse(markerX, 108, 30, 34, 0, 0, Math.PI * 2); ctx.fill();
@@ -153,13 +208,13 @@ export function createPresentation(surface: HTMLElement) {
       }
       if (passage.pattern === 'drift') {
         const point = minePosition(passage, run.elapsed);
-        ctx.drawImage(images.mine!, point.x - distance - 47, point.y - 47, 94, 94);
+        ctx.fillStyle='#c2694925';ctx.beginPath();ctx.arc(point.x-distance,point.y,39,0,Math.PI*2);ctx.fill();
+        ctx.drawImage(images.objects!,512,512,512,512,point.x-distance-47,point.y-47,94,94);
       } else {
         const center = passageCenter(passage, run.elapsed), upper = center - passage.gap / 2, lower = center + passage.gap / 2;
-        if (passage.pattern === 'rise' || passage.pattern === 'gate' || passage.pattern === 'sway') ctx.drawImage(images.pillar!, x, lower, passage.width, flight.height - lower + 32);
+        if (passage.pattern === 'rise' || passage.pattern === 'gate' || passage.pattern === 'sway') stone(x, lower, passage.width, flight.height - lower + 32, false);
         if (passage.pattern === 'dive' || passage.pattern === 'gate' || passage.pattern === 'sway') {
-          ctx.save(); ctx.translate(x + passage.width, upper); ctx.scale(-1, -1);
-          ctx.drawImage(images.pillar!, 0, 0, passage.width, upper + 32); ctx.restore();
+          stone(x, -32, passage.width, upper + 32, true);
         }
       }
     }
@@ -167,8 +222,10 @@ export function createPresentation(surface: HTMLElement) {
       const x = fragment.x - distance;
       if (x + fragmentShape.halfWidth < -view.x || x - fragmentShape.halfWidth > worldWidth - view.x) return;
       ctx.globalAlpha = motion.matches ? 1 : .9 + Math.sin(time * 4 + fragment.x) * .1;
-      ctx.drawImage(images.fragment!, x - fragmentShape.halfWidth, fragment.y - fragmentShape.halfHeight,
-        fragmentShape.halfWidth * 2, fragmentShape.halfHeight * 2);
+      const variant = Math.round(fragment.x / 42) % 13;
+      const cell = variant === 0 ? 2 : variant < 4 ? 1 : 0;
+      ctx.fillStyle='#fff8e98c';ctx.beginPath();ctx.arc(x,fragment.y,17,0,Math.PI*2);ctx.fill();
+      ctx.drawImage(images.objects!, cell % 2 * 512, Math.floor(cell / 2) * 512,512,512,x-17,fragment.y-17,34,34);
     }
     for (const fragment of run.fragments) if (!fragment.collected) drawFragment(fragment);
     let retained = 0;
@@ -178,8 +235,8 @@ export function createPresentation(surface: HTMLElement) {
     }
     missedFragments.length = retained;
     ctx.globalAlpha = 1;
-    const playerX = titleTime !== undefined ? flight.playerX : run.player.x;
-    const playerY = titleTime !== undefined ? 280 + Math.sin(decorative * 1.8) * 12 : run.player.y;
+    const playerX = titleTime !== undefined ? worldWidth * .72 - view.x : run.player.x;
+    const playerY = titleTime !== undefined ? 230 + Math.sin(decorative * 1.8) * 12 : run.player.y;
     const shieldLeft = run.shieldUntil - run.elapsed;
     if (titleTime === undefined && shieldLeft > 0) {
       const fade = Math.min(1, shieldLeft / .7);
@@ -200,12 +257,12 @@ export function createPresentation(surface: HTMLElement) {
       ctx.globalAlpha = 1;
     }
     const frames = run.thrust ? courier.thrust : courier.glide;
-    const frame = frames[motion.matches ? 0 : Math.floor(time * (run.thrust ? 9 : 3)) % frames.length]!;
+    const frame = time - (scores.at(-1)?.start ?? -Infinity) < .18 ? 2 : frames[motion.matches ? 0 : Math.floor(time * (run.thrust ? 9 : 3)) % frames.length]!;
     ctx.save(); ctx.translate(playerX, playerY);
     const tilt = motion.matches || titleTime !== undefined ? 0 : Math.max(-.19, Math.min(.22, run.player.vy / 1500));
     ctx.rotate(tilt);
     ctx.drawImage(images.courier, frame % 2 * courier.cell, Math.floor(frame / 2) * courier.cell, courier.cell, courier.cell,
-      -courier.size * courier.anchorX, -courier.size * courier.anchorY, courier.size, courier.size);
+      -(titleTime !== undefined ? 160 : courier.size) * courier.anchorX, -(titleTime !== undefined ? 160 : courier.size) * courier.anchorY, titleTime !== undefined ? 160 : courier.size, titleTime !== undefined ? 160 : courier.size);
     ctx.restore();
     let keep = 0;
     for (const spark of sparks) {
@@ -227,8 +284,7 @@ export function createPresentation(surface: HTMLElement) {
       ctx.fillStyle = '#fff1bc'; ctx.fillText(`+${score.points}`, x, y);
     }
     scores.length = keep; ctx.globalAlpha = 1;
-    clouds(.85, 558, .95, 340, 305);
-    clouds(.6, -104, .75, 380, 380);
+    if (time - checkpointTime < 2.5) label('Checkpoint committed.', playerX + 100, 160);
     if (run.elapsed < 3.2 && titleTime === undefined && run.status === 'active') {
       ctx.fillStyle = '#123d49d9'; ctx.font = '600 12px system-ui'; ctx.textAlign = 'left';
       ctx.fillText('HOLD TO RISE · SLIDE SIDEWAYS', Math.min(Math.max(playerX + 46, 70), 300), Math.min(Math.max(playerY - 36, 78), 520));
