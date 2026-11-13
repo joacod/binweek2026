@@ -5,6 +5,7 @@ The entrypoint mounts Binagora Week 2026 directly. The Hive Reunion event artwor
 | Owner | Responsibility |
 | --- | --- |
 | `src/main.ts`, `src/style.css` | Document mount, persistent fullscreen target, startup failure and HMR cleanup |
+| `src/site.ts`, `scripts/site-assets.mjs` | Public title, description and canonical URL. Dev and production builds generate the share card, icons, robots.txt and sitemap, then inject them into the initial HTML |
 | `src/game/app.ts` | Session composition, screen transitions, clock, required-art readiness, graphics recovery, fresh runs and checkpoint continuation |
 | `src/game/content.ts`, `route.ts`, `collection.ts`, `game.ts` | Tuning/geometry, seeded route certification, swept pickups, mutable rules, finite completion, player-progress chapters and semantic events |
 | `src/game/input.ts` | Action mapping, launch hold, pointer capture and relative CSS-pixel drag |
@@ -22,7 +23,7 @@ Simulation advances through a bounded fixed-step clock only while playing and re
 
 AudioBits **0.7.0** is the only runtime package. `engine/browser/audio.ts` lazily owns one engine, caps voice overlap, invalidates pending activation and disposes voices/context. Existing start/resume/continue gestures activate it synchronously. The game maps events to recipes and local cooldowns. See the [AudioBits skill](../.agents/skills/audiobits/SKILL.md) before changing sound. Optional MCP tooling in that skill is authoring support and is not needed to run or build the game.
 
-Vite builds static assets with relative URLs. TypeScript checks source ownership through explicit imports. Sharp is an offline artwork tool, and Playwright is used only for Chromium verification. Versions and the lockfile preserve the extraction's dependency baseline. The narrow pnpm release-age exception retains the already-used AudioBits version.
+Vite builds static assets with relative URLs. Its config recreates `public/social.png`, the icon sizes, `robots.txt` and `sitemap.xml` on every dev server and production build, then injects Open Graph, Twitter Card and WebSite data into the document before any script runs. Those derived files stay out of git. The canonical URL is `https://binweek2026.vercel.app/`. TypeScript checks source ownership through explicit imports. Sharp is an offline artwork tool, and Playwright is used only for Chromium verification. Versions and the lockfile preserve the extraction's dependency baseline. The narrow pnpm release-age exception retains the already-used AudioBits version.
 
 ## Origin
 

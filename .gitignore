@@ -3,3 +3,9 @@ dist/
 playwright-report/
 test-results/
 .DS_Store
+# Derived from the site identity, official icon and coastal artwork.
+public/icon-32.png
+public/apple-touch-icon.png
+public/social.png
+public/robots.txt
+public/sitemap.xml
