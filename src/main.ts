@@ -3,6 +3,8 @@ import { createFullscreen } from './engine/browser/fullscreen.ts';
 import './style.css';
 
 const root = document.querySelector<HTMLElement>('#app')!;
+// The static introduction is for link crawlers. The mounted game replaces it.
+root.replaceChildren();
 const fullscreen = createFullscreen(root);
 try {
   const session = mountBinweek(root, fullscreen);
