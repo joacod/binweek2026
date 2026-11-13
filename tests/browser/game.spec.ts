@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { site } from '../../src/site.ts';
 
 test('standalone artwork retry unlocks flight and pause preserves a resumable run', async ({ page }) => {
   const errors: string[] = [];
@@ -25,10 +26,14 @@ test('standalone artwork retry unlocks flight and pause preserves a resumable ru
     await expect(page.getByRole('button', {name:'Fullscreen',exact:true})).toBeInViewport();
   }
   await expect(page.getByRole('link', {name:'Binagora',exact:true})).toHaveAttribute('href', 'https://binagora.com/');
+  const source = page.getByRole('link', {name:'GitHub', exact:true});
+  await expect(source).toBeVisible();
+  await expect(source).toHaveAttribute('href', site.repository);
   await page.getByRole('button', {name:'Mute sound',exact:true}).click();
   await expect(page.getByRole('button', {name:'Unmute sound',exact:true})).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', {name:'How to play',exact:true}).click();
   await expect(page.getByRole('heading', {name:'Flight guide',exact:true})).toBeVisible();
+  await expect(source).toBeHidden();
   await expect(page.getByRole('button', {name:'Unmute sound',exact:true})).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', {name:'How to play',exact:true})).toBeFocused();
@@ -46,6 +51,7 @@ test('standalone artwork retry unlocks flight and pause preserves a resumable ru
   await page.keyboard.up('Space');
   await page.keyboard.press('KeyP');
   await expect(page.getByRole('heading', { name: 'Paused', exact: true })).toBeVisible();
+  await expect(source).toBeHidden();
   await page.getByRole('button', { name: 'Resume', exact: true }).click();
   await expect(page.locator('.cloudwake-app')).toHaveAttribute('data-screen', 'playing');
   await page.keyboard.press('KeyP');

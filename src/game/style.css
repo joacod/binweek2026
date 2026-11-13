@@ -90,6 +90,9 @@
 .cloudwake-app .game-menu-actions .game-menu-primary:enabled:hover { background: #f8b757; box-shadow: none; }
 .cloudwake-app .game-menu-utilities button { color: #6b6254; font-size: 11px; }
 .cloudwake-app .game-menu-origin, .cloudwake-app .game-menu-origin a { color: #756c5e; }
+.cloudwake-app .game-menu-origin { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.cloudwake-app .game-menu-origin .binweek-source { display: inline-flex; flex: none; align-items: center; gap: 6px; color: #323232; font: 600 13px/1 system-ui, sans-serif; text-decoration: none; border-radius: 4px; }
+.cloudwake-app .binweek-source svg { display: block; }
 .cloudwake-app .game-menu-controls, .cloudwake-app .game-menu-controls :is(b,h2), .cloudwake-app .menu-readout { color: #4a4a4a; }
 .cloudwake-app .menu-readout { background: #f3ead8; border-color: #e5dccb; box-shadow: none; }
 .cloudwake-app .game-menu-notices { color: #915800; }
@@ -152,7 +155,7 @@
   .cloudwake-app .binweek-subtitle { font-size: 19px; }
   .cloudwake-app .game-menu-body { grid-column: 2; padding: 22px 22px 10px 0; }
   .cloudwake-app .game-menu-main { display: block; }
-  .cloudwake-app .game-menu-actions { grid-column: 2; padding: 10px 22px 18px 0; border: 0; }
+  .cloudwake-app .game-menu-actions { grid-column: 2; grid-row: 2; align-content: start; padding: 10px 22px 18px 0; border: 0; }
   .cloudwake-app .game-menu-origin { font-size: 10px; }
   .cloudwake-app .game-menu-notices { grid-column: 1 / -1; }
   .cloudwake-app .game-menu-layer[data-settings='true'] .game-menu { display: flex; }
