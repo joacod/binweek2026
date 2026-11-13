@@ -28,7 +28,8 @@ export function createUI(root: HTMLElement, surface: HTMLElement, signal: AbortS
   });
   const header = menu.layer.querySelector('.game-menu-header')!;
   const mark = document.createElement('img'); mark.src = logo; mark.alt = 'Binagora'; mark.className = 'binweek-logo'; mark.width = 474; mark.height = 132;
-  header.prepend(mark);
+  const brand = document.createElement('a'); brand.href = 'https://binagora.com/'; brand.target = '_blank'; brand.rel = 'noopener noreferrer'; brand.className = 'binweek-brand-link'; brand.title = 'Visit Binagora (opens in a new tab)'; brand.append(mark);
+  header.prepend(brand);
   menu.layer.querySelector('.game-menu-eyebrow')!.textContent = 'MAR DEL PLATA, ARGENTINA';
   const subtitle = document.createElement('p'); subtitle.className = 'binweek-subtitle'; subtitle.textContent = 'The Hive Reunion'; header.append(subtitle);
   const premise = document.createElement('div'); premise.className = 'binweek-premise'; premise.innerHTML = '<span>5 coastal stops <i aria-hidden="true">·</i> a 2-minute escape</span><p><kbd>Hold</kbd> to rise. Release to fall.<br><small>A / D, arrows or drag to slide.</small></p>';
@@ -43,7 +44,7 @@ export function createUI(root: HTMLElement, surface: HTMLElement, signal: AbortS
         : screen === 'crashed' ? 'A small detour. Continue from your latest checkpoint with its score, streak and shield.'
         : screen === 'defeat' ? 'The hive will save you a seat. Try the coast again.'
         : screen === 'victory' ? 'The whole hive, together.' : '';
-      results.element.hidden = screen === 'title'; premise.hidden = screen !== 'title'; mark.hidden = screen !== 'title'; subtitle.hidden = screen !== 'title';
+      results.element.hidden = screen === 'title'; premise.hidden = screen !== 'title'; brand.hidden = screen !== 'title'; subtitle.hidden = screen !== 'title';
       for (const button of Object.values(controls)) button.disabled = screen !== 'playing';
       menu.show(screen, focus);
       if (screen === 'crashed') menu.heading.textContent = 'Unexpected snack exception.';

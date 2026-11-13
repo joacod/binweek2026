@@ -77,7 +77,11 @@ export function createGameMenu<Action extends string, Screen extends string>(roo
   const main = layer.querySelector<HTMLElement>('.game-menu-main')!;
   const preferences = layer.querySelector<HTMLElement>('.game-menu-preferences')!;
   const instructions = layer.querySelector<HTMLElement>('.game-menu-instructions')!;
-  preferences.prepend(utilities);
+  function showDetails(open: boolean) {
+    main.hidden = open; preferences.hidden = !open;
+    if (open) preferences.prepend(utilities);
+    else main.append(utilities);
+  }
   if (typeof config.controls === 'string') instructions.innerHTML = config.controls;
   else instructions.append(config.controls);
   if (config.game) content.append(config.game);
@@ -98,7 +102,7 @@ export function createGameMenu<Action extends string, Screen extends string>(roo
     layer.dataset.settings = String(open);
     heading.textContent = open ? 'Flight guide' : screenHeading;
     name.hidden = !open && screen === 'title';
-    main.hidden = open; preferences.hidden = !open;
+    showDetails(open);
     openSettings.hidden = open || screen !== 'title' && screen !== 'paused';
     origin.hidden = open || screen !== 'title';
     back.hidden = !open;
@@ -191,7 +195,7 @@ export function createGameMenu<Action extends string, Screen extends string>(roo
       }
       screen = next; root.dataset.screen = next; layer.hidden = next === 'playing';
       layer.dataset.settings = String(settingsOpen);
-      main.hidden = settingsOpen; preferences.hidden = !settingsOpen; back.hidden = !settingsOpen;
+      showDetails(settingsOpen); back.hidden = !settingsOpen;
       openSettings.hidden = settingsOpen || next !== 'title' && next !== 'paused';
       origin.hidden = settingsOpen || next !== 'title';
       heading.textContent = settingsOpen ? 'Flight guide' : nextHeading;

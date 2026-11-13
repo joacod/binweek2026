@@ -59,12 +59,16 @@ export function createPresentation(surface: HTMLElement) {
   const ctx = context;
   const lifetime = new AbortController();
   let art: PreparedImages | undefined, pending: Promise<void> | undefined;
+  let masonry: CanvasPattern | null = null;
   function prepare(): Promise<void> {
     if (art) return Promise.resolve();
     if (pending) return pending;
     pending = (async () => {
       const prepared = await prepareImages(urls, lifetime.signal, dimensions => validateImageDimensions(dimensions, sizes));
       if (lifetime.signal.aborted) { prepared.dispose(); return; }
+      masonry = ctx.createPattern(prepared.images.quartzite!, 'repeat');
+      if (!masonry) { prepared.dispose(); throw new Error('Stone material unavailable'); }
+      masonry.setTransform(new DOMMatrix().scale(.25));
       art = prepared;
     })().finally(() => { pending = undefined; });
     return pending;
@@ -211,16 +215,28 @@ export function createPresentation(surface: HTMLElement) {
       ctx.fillStyle='#f59e2b'; ctx.beginPath(); ctx.moveTo(-8,-31);ctx.lineTo(0,-43);ctx.lineTo(8,-31);ctx.fill(); ctx.restore();
     }
     function stone(x: number, y: number, w: number, h: number, ceiling: boolean) {
-      ctx.fillStyle='#797d76'; ctx.fillRect(x+3,y,w-6,h);
-      ctx.fillStyle='#a3a493'; ctx.fillRect(x+9,y,w-18,h);
-      ctx.strokeStyle='#5e655b'; ctx.lineWidth=2;
-      for(let row=0;row<h;row+=36) {
-        ctx.beginPath();ctx.moveTo(x+9,y+row);ctx.lineTo(x+w-9,y+row);ctx.stroke();
-        const joint=x+w*(row%72===0?.38:.67);ctx.beginPath();ctx.moveTo(joint,y+row);ctx.lineTo(joint,Math.min(y+row+36,y+h));ctx.stroke();
+      // Promenade masonry: the full rectangle stays solid. The material is
+      // anchored to the moving pier, while cornices stay inside its hit shape.
+      ctx.save(); ctx.translate(x, ceiling ? y + h : y);
+      const top = ceiling ? -h : 0;
+      ctx.fillStyle = masonry!; ctx.fillRect(0, top, w, h);
+      const shade = ctx.createLinearGradient(0, 0, w, 0);
+      shade.addColorStop(0, '#fff4d94d'); shade.addColorStop(.12, '#fff4d90a');
+      shade.addColorStop(.75, '#6747330a'); shade.addColorStop(1, '#59432f80');
+      ctx.fillStyle = shade; ctx.fillRect(0, top, w, h);
+      function band(inset: number, offset: number, depth: number, color: string) {
+        ctx.fillStyle = color; ctx.fillRect(inset, ceiling ? -offset - depth : offset, w - inset * 2, depth);
       }
-      const edge=ceiling?y+h-12:y;
-      ctx.fillStyle='#b66544';ctx.fillRect(x,edge,w,12);
-      ctx.fillStyle='#f8c477';for(let i=9;i<w-8;i+=21) {ctx.beginPath();ctx.moveTo(x+i,edge+2);ctx.lineTo(x+i+7,edge+2);ctx.lineTo(x+i+3,edge+10);ctx.lineTo(x+i-4,edge+10);ctx.fill();}
+      // Pale stepped stone molding, with a terracotta lip at the flight edge.
+      band(0, 0, 3, '#9f503b'); band(0, 3, 5, '#cd8258');
+      band(0, 8, 3, '#f6dfb8'); band(0, 11, 7, '#ddc098');
+      band(3, 18, 4, '#a08060'); band(6, 22, 8, '#ead2ac');
+      band(6, 30, 2, '#967558');
+      // Shallow dressed-stone borders, rather than window-like empty holes.
+      ctx.fillStyle = '#fff1d42b'; ctx.fillRect(3, top, 7, h); ctx.fillRect(w - 13, top, 5, h);
+      ctx.strokeStyle = '#765d46a6'; ctx.lineWidth = 1;
+      ctx.strokeRect(.5, top + .5, w - 1, h - 1);
+      ctx.restore();
     }
     const destination = run.passages.find(p => p.leg === 4 && p.pattern === 'breather');
     if (destination && run.checkpoint.number === 4) {
@@ -371,6 +387,6 @@ export function createPresentation(surface: HTMLElement) {
     }
   }
   return { element, prepare, draw, consume, reset,
-    dispose() { if (disposed) return; disposed = true; lifetime.abort(); art?.dispose(); art = undefined; passages.clear(); sparks.length = scores.length = missedFragments.length = 0; element.remove(); element.width = element.height = 0; },
+    dispose() { if (disposed) return; disposed = true; lifetime.abort(); art?.dispose(); art = undefined; masonry = null; passages.clear(); sparks.length = scores.length = missedFragments.length = 0; element.remove(); element.width = element.height = 0; },
   };
 }

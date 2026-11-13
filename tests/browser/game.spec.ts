@@ -21,13 +21,23 @@ test('standalone artwork retry unlocks flight and pause preserves a resumable ru
     expect(await page.locator('.game-menu-body').evaluate(element => element.scrollHeight <= element.clientHeight + 1)).toBe(true);
     await expect(play).toBeInViewport();
     await expect(page.getByRole('button', {name:'How to play',exact:true})).toBeInViewport();
+    await expect(page.getByRole('button', {name:'Mute sound',exact:true})).toBeInViewport();
+    await expect(page.getByRole('button', {name:'Fullscreen',exact:true})).toBeInViewport();
   }
+  await expect(page.getByRole('link', {name:'Binagora',exact:true})).toHaveAttribute('href', 'https://binagora.com/');
+  await page.getByRole('button', {name:'Mute sound',exact:true}).click();
+  await expect(page.getByRole('button', {name:'Unmute sound',exact:true})).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', {name:'How to play',exact:true}).click();
   await expect(page.getByRole('heading', {name:'Flight guide',exact:true})).toBeVisible();
-  await expect(page.getByRole('button', {name:'Mute sound',exact:true})).toBeVisible();
+  await expect(page.getByRole('button', {name:'Unmute sound',exact:true})).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', {name:'How to play',exact:true})).toBeFocused();
   await page.setViewportSize({width:1280,height:900});
+  await page.getByRole('button', {name:'Fullscreen',exact:true}).click();
+  await expect(page.getByRole('button', {name:'Exit fullscreen',exact:true})).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.cloudwake-app')).toHaveAttribute('data-screen', 'title');
+  await page.getByRole('button', {name:'Exit fullscreen',exact:true}).click();
+  await expect(page.getByRole('button', {name:'Fullscreen',exact:true})).toHaveAttribute('aria-pressed', 'false');
   // Let the display-change suspension settle before launching a new run.
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await play.focus();
