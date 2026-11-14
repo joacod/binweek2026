@@ -8,12 +8,12 @@ export function createSound(onStatus: (message: string) => void) {
   const cooldowns = createCooldowns<keyof typeof binweekRecipes>();
   return { ...audio,
     reset() { cooldowns.clear(); audio.reset(); },
-    consume(events: readonly FlightEvent[], thrust: boolean) {
+    consume(events: readonly FlightEvent[]) {
       cooldowns.advance(audio.time);
-      for (const cue of ['victory', 'crash', 'shield-hit', 'checkpoint', 'shield-ready', 'pickup', 'thrust'] as const) {
-        if (!(cue === 'thrust' ? thrust : events.some(event => event.type === cue)) || !cooldowns.allows(cue)) continue;
+      for (const cue of ['victory', 'crash', 'shield-hit', 'checkpoint', 'shield-ready', 'pickup'] as const) {
+        if (!events.some(event => event.type === cue) || !cooldowns.allows(cue)) continue;
         if (cue === 'crash' || cue === 'victory') { audio.reset(); cooldowns.clear(); }
-        if (audio.play(cue)) cooldowns.record(cue, cue === 'thrust' ? .14 : cue === 'pickup' ? .065 : .5);
+        if (audio.play(cue)) cooldowns.record(cue, cue === 'pickup' ? .065 : .5);
         if (cue === 'crash' || cue === 'victory') break;
       }
     },

@@ -3,13 +3,13 @@ import { site } from '../../src/site.ts';
 
 declare global {
   interface Window {
-    audioProbe: { contexts: AudioContext[]; resumes: string[]; oscillators: number; level(): number; harmonics(): number[] };
+    audioProbe: { contexts: AudioContext[]; resumes: string[]; oscillators: number; level(): number };
   }
 }
 
 for (const touch of [false, true]) test.describe(touch ? 'touch audio' : 'desktop audio', () => {
   test.use({ hasTouch: touch, viewport: touch ? { width: 390, height: 844 } : { width: 1280, height: 900 } });
-  test('launch unlocks quiet wings only while rising, and pause/resume retains one context', async ({ page }) => {
+  test('movement stays silent while launch and pause/resume retain one audio context', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
     const touchSession = touch ? await page.context().newCDPSession(page) : undefined;
@@ -37,13 +37,6 @@ for (const touch of [false, true]) test.describe(touch ? 'touch audio' : 'deskto
         const samples = new Float32Array(analyser.fftSize);
         analyser.getFloatTimeDomainData(samples);
         return Math.sqrt(samples.reduce((sum, sample) => sum + sample * sample, 0) / samples.length);
-      }, harmonics() {
-        const analyser = analysers[0];
-        const spectrum = new Float32Array(analyser.frequencyBinCount);
-        analyser.getFloatFrequencyData(spectrum);
-        const binHz = analyser.context.sampleRate / analyser.fftSize;
-        return [1, 4, 6].map(harmonic => Math.max(...spectrum.slice(
-          Math.ceil(harmonic * 210 / binHz), Math.floor(harmonic * 250 / binHz) + 1)));
       } };
       window.AudioContext = class extends NativeContext {
         constructor(options?: AudioContextOptions) {
@@ -69,7 +62,6 @@ for (const touch of [false, true]) test.describe(touch ? 'touch audio' : 'deskto
     if (touch) await play.tap(); else await play.click();
     await expect(page.locator('.cloudwake-app')).toHaveAttribute('data-screen', 'playing');
     await expect.poll(() => page.evaluate(() => window.audioProbe.contexts[0].state)).toBe('running');
-    // The launch press can make one flutter. It must settle to silence when released.
     await page.waitForTimeout(220);
     expect(await page.evaluate(() => window.audioProbe.level())).toBe(0);
     const holdRise = async () => {
@@ -92,14 +84,10 @@ for (const touch of [false, true]) test.describe(touch ? 'touch audio' : 'deskto
       })).toBe(true);
     }
     await holdRise();
-    await expect.poll(() => page.evaluate(() => window.audioProbe.level())).toBeGreaterThan(.0006);
+    expect(await page.evaluate(() => window.audioProbe.level())).toBe(0);
     await page.waitForTimeout(650); // Cross the native long-press threshold with a real held touch.
-    expect(await page.evaluate(() => window.audioProbe.level())).toBeLessThan(.006);
-    // A bee needs a rich harmonic buzz. The previous smooth tone dropped these
-    // upper even harmonics, despite having the right fundamental frequency.
-    const [fundamental, fourth, sixth] = await page.evaluate(() => window.audioProbe.harmonics());
-    expect(fourth).toBeGreaterThan(fundamental - 24);
-    expect(sixth).toBeGreaterThan(fundamental - 30);
+    expect(await page.evaluate(() => window.audioProbe.level())).toBe(0);
+    expect(await page.evaluate(() => window.audioProbe.oscillators)).toBe(0);
     expect(await page.evaluate(() => window.getSelection()?.toString())).toBe('');
     await releaseRise();
     await page.waitForTimeout(220);
@@ -114,7 +102,7 @@ for (const touch of [false, true]) test.describe(touch ? 'touch audio' : 'deskto
     await expect.poll(() => page.evaluate(() => window.audioProbe.contexts[0].state)).toBe('running');
     expect(await page.evaluate(() => window.audioProbe.level())).toBe(0);
     await holdRise();
-    await expect.poll(() => page.evaluate(() => window.audioProbe.level())).toBeGreaterThan(.0006);
+    expect(await page.evaluate(() => window.audioProbe.level())).toBe(0);
     await releaseRise();
     expect(await page.evaluate(() => window.audioProbe.contexts.length)).toBe(1);
     expect(await page.evaluate(() => window.audioProbe.resumes)).toEqual(touch ? ['click', 'click'] : ['pointerdown', 'click']);
