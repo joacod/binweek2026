@@ -8,7 +8,7 @@ test('flight recipes validate and serialize against the installed AudioBits runt
     const result = validateRecipe(recipe);
     assert.equal(result.ok, true, `${cue}: ${JSON.stringify(result.ok ? [] : result.issues)}`);
     assert.equal(validateRecipe(JSON.parse(JSON.stringify(recipe))).ok, true, cue);
-    assert.equal(recipe.kind, cue === 'wings' ? 'sustained' : 'one-shot');
+    assert.equal(recipe.kind, 'one-shot');
     assert.ok(recipe.layers.length <= 3, `${cue} resource budget`);
   }
 });

@@ -108,7 +108,7 @@ export function mountBinweek(container: HTMLElement, fullscreen: FullscreenContr
       if (screen === 'playing') {
         const steps = clock.advance(now);
         for (let i = 0; i < steps && run.status === 'active'; i++) stepRun(run, input.read(), FIXED_STEP);
-        const events = takeEvents(run); presentation.consume(events); sound.consume(events, run.thrust, run.status === 'active');
+        const events = takeEvents(run); presentation.consume(events); sound.consume(events, run.thrust);
         if (run.status === 'crashed' || run.status === 'defeat' || run.status === 'victory') {
           outcomeAt = now;
           transition(run.status);

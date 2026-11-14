@@ -1,4 +1,4 @@
-import { createAudio, type AudioEngine, type Recipe, type Sound, type PlayOptions, type Voice } from 'audiobits';
+import { createAudio, type AudioEngine, type Recipe, type Sound, type PlayOptions } from 'audiobits';
 
 export const MAX_VOICES = 12;
 const unavailable = 'Sound unavailable. Tap a flight control or use Play or Resume to try again.';
@@ -7,7 +7,6 @@ const unavailable = 'Sound unavailable. Tap a flight control or use Play or Resu
 export function createGameAudio<Cue extends string>(recipes: Readonly<Record<Cue, Recipe>>, onStatus: (message: string) => void) {
   let engine: AudioEngine | undefined;
   const sounds = new Map<Cue, Sound>();
-  const sustained = new Map<Cue, Voice>();
   let disposed = false, paused = true, muted = false, volume = 0.45, ready = false;
   let generation = 0, suspending: Promise<void> | undefined;
   const audible = () => !disposed && !paused && !muted && volume > 0;
@@ -17,7 +16,6 @@ export function createGameAudio<Cue extends string>(recipes: Readonly<Record<Cue
     // Sound.dispose cuts graphs immediately, even with a suspended clock or delay tails.
     for (const sound of sounds.values()) sound.dispose();
     sounds.clear();
-    sustained.clear();
   }
   function suspend() {
     const owned = engine;
@@ -83,18 +81,6 @@ export function createGameAudio<Cue extends string>(recipes: Readonly<Record<Cue
     },
     /** Audio time is presentation-only: adapters use it for cue throttling. */
     get time() { return ready && engine?.state === 'running' ? engine.native.context.currentTime : 0; },
-    /** One retained voice per continuous cue; cancellation owns its whole graph. */
-    sustain(cue: Cue, parameters: Readonly<Record<string, number>>) {
-      if (!audible() || !ready || !engine || engine.state !== 'running') return;
-      try {
-        const voice = sustained.get(cue);
-        if (voice?.state === 'active') { voice.set(parameters); return; }
-        if (engine.counts.active + engine.counts.retiring >= MAX_VOICES) return;
-        let sound = sounds.get(cue);
-        if (!sound) { sound = engine.sound(recipes[cue]); sounds.set(cue, sound); }
-        sustained.set(cue, sound.play({ parameters }));
-      } catch { silence(); onStatus(unavailable); }
-    },
     play(cue: Cue, options?: PlayOptions): boolean {
       if (!audible() || !ready || !engine || engine.state !== 'running') return false;
       // Include retiring/releasing voices. Drop excess instead of stealing an important cue.

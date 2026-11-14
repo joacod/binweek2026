@@ -9,7 +9,7 @@ declare global {
 
 for (const touch of [false, true]) test.describe(touch ? 'touch audio' : 'desktop audio', () => {
   test.use({ hasTouch: touch, viewport: touch ? { width: 390, height: 844 } : { width: 1280, height: 900 } });
-  test('launch activates audible continuous wings and pause/resume retains one context', async ({ page }) => {
+  test('launch unlocks quiet wings only while rising, and pause/resume retains one context', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
     const touchSession = touch ? await page.context().newCDPSession(page) : undefined;
@@ -61,9 +61,20 @@ for (const touch of [false, true]) test.describe(touch ? 'touch audio' : 'deskto
     expect(await page.evaluate(() => window.audioProbe.contexts.length)).toBe(0);
     if (touch) await play.tap(); else await play.click();
     await expect(page.locator('.cloudwake-app')).toHaveAttribute('data-screen', 'playing');
-    await expect.poll(() => page.evaluate(() => window.audioProbe.level())).toBeGreaterThan(.003);
-    const idle = await page.evaluate(() => window.audioProbe.level());
-    const oscillatorCount = await page.evaluate(() => window.audioProbe.oscillators);
+    await expect.poll(() => page.evaluate(() => window.audioProbe.contexts[0].state)).toBe('running');
+    // The launch press can make one flutter. It must settle to silence when released.
+    await page.waitForTimeout(220);
+    expect(await page.evaluate(() => window.audioProbe.level())).toBe(0);
+    const holdRise = async () => {
+      if (touch) {
+        const box = (await page.getByRole('button', { name: 'Hold to rise' }).boundingBox())!;
+        await touchSession!.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }] });
+      } else await page.keyboard.down('Space');
+    };
+    const releaseRise = async () => {
+      if (touch) await touchSession!.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      else await page.keyboard.up('Space');
+    };
     if (touch) {
       const rise = page.getByRole('button', { name: 'Hold to rise' });
       // Check the actual label span too: the old symptom was a copy/select menu.
@@ -72,20 +83,27 @@ for (const touch of [false, true]) test.describe(touch ? 'touch audio' : 'deskto
         const event = new Event('touchstart', { bubbles: true, cancelable: true });
         return style.userSelect === 'none' && !element.dispatchEvent(event);
       })).toBe(true);
-      const box = (await rise.boundingBox())!;
-      await touchSession!.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }] });
-    } else await page.keyboard.down('Space');
-    await expect.poll(() => page.evaluate(() => window.audioProbe.level())).toBeGreaterThan(idle * 1.5);
+    }
+    await holdRise();
+    await expect.poll(() => page.evaluate(() => window.audioProbe.level())).toBeGreaterThan(.0006);
     await page.waitForTimeout(650); // Cross the native long-press threshold with a real held touch.
-    expect(await page.evaluate(() => window.audioProbe.oscillators)).toBe(oscillatorCount);
+    expect(await page.evaluate(() => window.audioProbe.level())).toBeLessThan(.006);
     expect(await page.evaluate(() => window.getSelection()?.toString())).toBe('');
-    if (touch) await touchSession!.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    else await page.keyboard.up('Space');
+    await releaseRise();
+    await page.waitForTimeout(220);
+    expect(await page.evaluate(() => window.audioProbe.level())).toBe(0);
+    const stopped = await page.evaluate(() => window.audioProbe.oscillators);
+    await page.waitForTimeout(160);
+    expect(await page.evaluate(() => window.audioProbe.oscillators)).toBe(stopped);
     await page.getByRole('button', { name: 'Pause', exact: true }).click();
     await expect.poll(() => page.evaluate(() => window.audioProbe.contexts[0].state)).toBe('suspended');
     const resume = page.getByRole('button', { name: 'Resume', exact: true });
     if (touch) await resume.tap(); else await resume.click();
-    await expect.poll(() => page.evaluate(() => window.audioProbe.level())).toBeGreaterThan(.003);
+    await expect.poll(() => page.evaluate(() => window.audioProbe.contexts[0].state)).toBe('running');
+    expect(await page.evaluate(() => window.audioProbe.level())).toBe(0);
+    await holdRise();
+    await expect.poll(() => page.evaluate(() => window.audioProbe.level())).toBeGreaterThan(.0006);
+    await releaseRise();
     expect(await page.evaluate(() => window.audioProbe.contexts.length)).toBe(1);
     expect(await page.evaluate(() => window.audioProbe.resumes)).toEqual(touch ? ['click', 'click'] : ['pointerdown', 'click']);
     await page.getByRole('button', { name: 'Pause', exact: true }).click();
