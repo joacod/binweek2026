@@ -2,6 +2,7 @@ import { prepareImages, validateImageDimensions, type PreparedImages } from '../
 import { urls, sizes } from './art.ts';
 import type { Run, FlightEvent } from './game.ts';
 import { flight, viewScale, fragmentShape } from './content.ts';
+import type { CollectibleCell } from './collection.ts';
 import { minePosition, passageCenter, chapterAt, journeyLegs, type Passage } from './route.ts';
 
 /** Whole-cel roles, drawing footprints and anchors are independent of physics. */
@@ -30,7 +31,9 @@ export function gullFrame(elapsed: number, phase: number, reducedMotion = false)
 
 export function flightView(width: number, height: number) {
   const scale = viewScale(width, height);
-  return { scale, width: width / scale, y: (height - flight.height * scale) / 2, x: Math.max(0, width / scale * .2 - flight.playerX) };
+  const y = (height - flight.height * scale) / 2;
+  return { scale, width: width / scale, y, top: -y / scale, bottom: (height - y) / scale,
+    x: Math.max(0, width / scale * .2 - flight.playerX) };
 }
 
 /** Simulation retires hazards behind the flight slots; artwork lives to the viewport edge. */
@@ -80,13 +83,13 @@ export function createPresentation(surface: HTMLElement) {
   // A gameplay miss ends collection eligibility, not the gem's visible lifetime.
   // Keep its cosmetic image until the actual viewport edge eats it, including
   // the extra space behind the courier on wide displays.
-  const missedFragments: { x: number; y: number }[] = [];
+  const missedFragments: { x: number; y: number; cell: CollectibleCell }[] = [];
   let disposed = false, lastTime = 0, crashTime = -Infinity, checkpointTime = -Infinity, checkpointAt = NaN;
   surface.append(element);
   function reset() { passages.clear(); sparks.length = scores.length = missedFragments.length = 0; lastTime = 0; crashTime = checkpointTime = -Infinity; checkpointAt = NaN; }
   function consume(events: readonly FlightEvent[]) {
     for (const event of events) {
-      if (event.type === 'fragment-missed') { missedFragments.push({ x: event.x, y: event.y }); continue; }
+      if (event.type === 'fragment-missed') { missedFragments.push({ x: event.x, y: event.y, cell: event.cell }); continue; }
       if (event.type === 'crash') crashTime = lastTime;
       if (event.type === 'checkpoint') { checkpointTime = lastTime; checkpointAt = event.x; }
       if (event.type === 'pickup' && scores.length < 12) scores.push({ x: event.x, y: event.y, start: lastTime, points: event.points });
@@ -303,18 +306,17 @@ export function createPresentation(surface: HTMLElement) {
         ctx.restore();
       } else {
         const center = passageCenter(passage, run.elapsed), upper = center - passage.gap / 2, lower = center + passage.gap / 2;
-        if (passage.pattern === 'rise' || passage.pattern === 'gate' || passage.pattern === 'sway') stone(x, lower, passage.width, flight.height - lower + 32, false);
+        if (passage.pattern === 'rise' || passage.pattern === 'gate' || passage.pattern === 'sway') stone(x, lower, passage.width, view.bottom - lower + 1, false);
         if (passage.pattern === 'dive' || passage.pattern === 'gate' || passage.pattern === 'sway') {
-          stone(x, -32, passage.width, upper + 32, true);
+          stone(x, view.top - 1, passage.width, upper - view.top + 1, true);
         }
       }
     }
-    function drawFragment(fragment: { x: number; y: number }) {
+    function drawFragment(fragment: { x: number; y: number; cell: CollectibleCell }) {
       const x = fragment.x - distance;
       if (x + fragmentShape.halfWidth < -view.x || x - fragmentShape.halfWidth > worldWidth - view.x) return;
       ctx.globalAlpha = 1;
-      const variant = Math.round(fragment.x / 42) % 13;
-      const cell = variant === 0 ? 2 : variant < 4 ? 1 : 0;
+      const cell = fragment.cell;
       const tilt = motion.matches ? 0 : Math.sin(time * 2.5 + fragment.x) * .045;
       ctx.save(); ctx.translate(x,fragment.y); ctx.rotate(tilt);
       ctx.drawImage(images.objects!, cell % 2 * 512, Math.floor(cell / 2) * 512,512,512,-20,-20,40,40);

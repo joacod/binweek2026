@@ -18,13 +18,6 @@ export const binweekRecipes = {
   checkpoint: chime(659.25, .8),
   'shield-ready': chime(987.77, .55),
   'shield-hit': chime(392, .28),
-  thrust: defineSound({ schemaVersion: 1, kind: 'one-shot', duration: .14, layers: [
-    { id: 'wing-air', source: { type: 'noise', color: 'white' }, gainDb: -37,
-      envelope: { attack: .025, decay: .08, sustain: .12, release: .03 },
-      effects: [{ type: 'filter', filter: 'bandpass', frequency: 900, q: .7 }] },
-    { id: 'wingbeat', source: { type: 'oscillator', waveform: 'sine', frequency: { points: [[0, 175], [.13, 210]], curve: 'linear' } }, gainDb: -39,
-      envelope: { attack: .025, decay: .08, sustain: .1, release: .03 } },
-  ] }),
   crash: defineSound({ schemaVersion: 1, kind: 'one-shot', duration: .55, layers: [
     { id: 'impact', source: { type: 'noise', color: 'white' }, gainDb: -25,
       envelope: { attack: .002, decay: .2, sustain: 0, release: .05 },

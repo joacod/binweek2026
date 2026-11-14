@@ -1,4 +1,19 @@
 import { fragmentShape, pickupHull } from './content.ts';
+
+export type CollectibleCell = 0 | 1 | 2 | 3;
+/** Shuffle one small bag per arc, independently of route generation. Alfajores
+ * stay the signature reward while every arc includes churros, rabas and beer. */
+export function collectibleCells(seed: number): CollectibleCell[] {
+  const cells: CollectibleCell[] = [0, 0, 1, 2, 3];
+  let state = seed >>> 0 || 1;
+  for (let i = cells.length - 1; i > 0; i--) {
+    state ^= state << 13; state ^= state >>> 17; state ^= state << 5;
+    const j = (state >>> 0) % (i + 1);
+    [cells[i], cells[j]] = [cells[j]!, cells[i]!];
+  }
+  return cells;
+}
+
 interface Point { x: number; y: number }
 const diamond = [
   { x: 0, y: -fragmentShape.halfHeight }, { x: fragmentShape.halfWidth, y: 0 },

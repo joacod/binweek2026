@@ -78,13 +78,20 @@ export function mountBinweek(container: HTMLElement, fullscreen: FullscreenContr
       input?.clear(); clock.reset(); sound?.pause();
       if (screen === 'playing') { pauseRun(run, true); transition('paused', false); }
     }
-    // Start on press, preserving that same hold in the fresh run. Native clicks
-    // remain available for keyboard/assistive activation through the shared menu.
+    // Mouse launches preserve the hold. Touch launches use the native completed
+    // tap: touch pointerdown is not an audio-activating gesture on mobile browsers.
     for (const button of ui.launchButtons) button.addEventListener('pointerdown', event => {
-      if (event.button !== 0 || button.hidden || button.disabled) return;
+      if (event.pointerType === 'touch' || event.button !== 0 || button.hidden || button.disabled) return;
       event.preventDefault(); act(button.dataset.menuAction as Intent);
       if (screen === 'playing') input.holdPointer(event);
     }, { signal: host.signal });
+    // Retry interrupted audio from an accepted flight gesture using the same owner.
+    // Pointer presses are prevented for held controls, so touchend is explicit.
+    host.root.addEventListener('pointerdown', event => {
+      if (screen === 'playing' && event.pointerType !== 'touch' && event.button === 0) sound.activate();
+    }, { signal: host.signal, capture: true });
+    host.root.addEventListener('touchend', () => { if (screen === 'playing') sound.activate(); }, { signal: host.signal });
+    host.root.addEventListener('keydown', () => { if (screen === 'playing') sound.activate(); }, { signal: host.signal });
     host.root.addEventListener('keydown', event => {
       if (event.code !== 'Space' || event.repeat || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.isComposing) return;
       if (!ui.launchButtons.includes(event.target as HTMLButtonElement)) return;
@@ -101,7 +108,7 @@ export function mountBinweek(container: HTMLElement, fullscreen: FullscreenContr
       if (screen === 'playing') {
         const steps = clock.advance(now);
         for (let i = 0; i < steps && run.status === 'active'; i++) stepRun(run, input.read(), FIXED_STEP);
-        const events = takeEvents(run); presentation.consume(events); sound.consume(events, run.thrust);
+        const events = takeEvents(run); presentation.consume(events); sound.consume(events);
         if (run.status === 'crashed' || run.status === 'defeat' || run.status === 'victory') {
           outcomeAt = now;
           transition(run.status);

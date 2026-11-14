@@ -3,9 +3,39 @@ import assert from 'node:assert/strict';
 import { flight, fly, multiplierAt, speedAt, slide, fragmentShape, pickupRear } from '../../../src/game/content.ts';
 import { createRoute, nextPassage, reachable, minePosition, steerTo, legAt, safeGap, passageCenter, chapterAt, journeyLegs } from '../../../src/game/route.ts';
 import { continueRun, createRun, stepRun, pauseRun, takeEvents } from '../../../src/game/game.ts';
-import { touchesFragment } from '../../../src/game/collection.ts';
-import { coastalBlend, coastalPan, gullFrame, createPassageViews } from '../../../src/game/presentation.ts';
+import { touchesFragment, collectibleCells } from '../../../src/game/collection.ts';
+import { coastalBlend, coastalPan, gullFrame, createPassageViews, flightView } from '../../../src/game/presentation.ts';
 const dt = 1 / 60;
+
+test('collectible arcs shuffle all four foods reproducibly without changing route state', () => {
+  const arrangements = new Set();
+  for (let seed = 1; seed <= 100; seed++) {
+    const cells = collectibleCells(seed);
+    assert.deepEqual(cells, collectibleCells(seed));
+    assert.deepEqual([...cells].sort(), [0, 0, 1, 2, 3]);
+    arrangements.add(cells.join(''));
+    const run = createRun(seed);
+    assert.deepEqual(run.fragments, createRun(seed).fragments);
+    for (let i = 0; i < run.fragments.length; i += 5) {
+      assert.deepEqual(run.fragments.slice(i, i + 5).map(f => f.cell).sort(), [0, 0, 1, 2, 3]);
+    }
+    run.status = 'crashed';
+    const saved = structuredClone(run.checkpoint.state.fragments);
+    run.fragments[0].cell = (run.fragments[0].cell + 1) % 4;
+    assert.equal(continueRun(run), true);
+    assert.deepEqual(run.fragments, saved);
+  }
+  assert.ok(arrangements.size > 30, 'avoid a short repeating display pattern');
+});
+
+test('pier extents reach the canvas edges on portrait, landscape and desktop', () => {
+  for (const [width, height] of [[360, 550], [390, 700], [844, 280], [1280, 760]]) {
+    const view = flightView(width, height);
+    assert.ok(Math.abs(view.y + view.top * view.scale) < 1e-8);
+    assert.ok(Math.abs(view.y + view.bottom * view.scale - height) < 1e-8);
+    assert.ok(view.top <= 0 && view.bottom >= flight.height);
+  }
+});
 
 test('hold gives continuous lift, release brakes then falls, speed and cloud boundaries are bounded', () => {
   const player = { y: 300, vy: 0 };

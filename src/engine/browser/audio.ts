@@ -1,7 +1,7 @@
 import { createAudio, type AudioEngine, type Recipe, type Sound, type PlayOptions } from 'audiobits';
 
 export const MAX_VOICES = 12;
-const unavailable = 'Sound unavailable. Play continues silently. Use Start, Retry or Resume to try again.';
+const unavailable = 'Sound unavailable. Tap a flight control or use Play or Resume to try again.';
 
 /** One session owns one lazy AudioBits engine. No game events, recipes or scheduling live here. */
 export function createGameAudio<Cue extends string>(recipes: Readonly<Record<Cue, Recipe>>, onStatus: (message: string) => void) {
@@ -38,6 +38,7 @@ export function createGameAudio<Cue extends string>(recipes: Readonly<Record<Cue
   function activate() {
     if (disposed) return;
     paused = false;
+    if (ready && engine?.state === 'running') return;
     const token = ++generation;
     ready = false;
     if (!audible()) return;
