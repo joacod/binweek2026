@@ -3,7 +3,7 @@ import { site } from '../../src/site.ts';
 
 declare global {
   interface Window {
-    audioProbe: { contexts: AudioContext[]; resumes: string[]; oscillators: number; level(): number };
+    audioProbe: { contexts: AudioContext[]; resumes: string[]; oscillators: number; level(): number; harmonics(): number[] };
   }
 }
 
@@ -37,6 +37,13 @@ for (const touch of [false, true]) test.describe(touch ? 'touch audio' : 'deskto
         const samples = new Float32Array(analyser.fftSize);
         analyser.getFloatTimeDomainData(samples);
         return Math.sqrt(samples.reduce((sum, sample) => sum + sample * sample, 0) / samples.length);
+      }, harmonics() {
+        const analyser = analysers[0];
+        const spectrum = new Float32Array(analyser.frequencyBinCount);
+        analyser.getFloatFrequencyData(spectrum);
+        const binHz = analyser.context.sampleRate / analyser.fftSize;
+        return [1, 4, 6].map(harmonic => Math.max(...spectrum.slice(
+          Math.ceil(harmonic * 210 / binHz), Math.floor(harmonic * 250 / binHz) + 1)));
       } };
       window.AudioContext = class extends NativeContext {
         constructor(options?: AudioContextOptions) {
@@ -88,6 +95,11 @@ for (const touch of [false, true]) test.describe(touch ? 'touch audio' : 'deskto
     await expect.poll(() => page.evaluate(() => window.audioProbe.level())).toBeGreaterThan(.0006);
     await page.waitForTimeout(650); // Cross the native long-press threshold with a real held touch.
     expect(await page.evaluate(() => window.audioProbe.level())).toBeLessThan(.006);
+    // A bee needs a rich harmonic buzz. The previous smooth tone dropped these
+    // upper even harmonics, despite having the right fundamental frequency.
+    const [fundamental, fourth, sixth] = await page.evaluate(() => window.audioProbe.harmonics());
+    expect(fourth).toBeGreaterThan(fundamental - 24);
+    expect(sixth).toBeGreaterThan(fundamental - 30);
     expect(await page.evaluate(() => window.getSelection()?.toString())).toBe('');
     await releaseRise();
     await page.waitForTimeout(220);
