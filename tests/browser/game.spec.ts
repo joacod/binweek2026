@@ -1,6 +1,98 @@
 import { test, expect } from '@playwright/test';
 import { site } from '../../src/site.ts';
 
+declare global {
+  interface Window {
+    audioProbe: { contexts: AudioContext[]; resumes: string[]; oscillators: number; level(): number };
+  }
+}
+
+for (const touch of [false, true]) test.describe(touch ? 'touch audio' : 'desktop audio', () => {
+  test.use({ hasTouch: touch, viewport: touch ? { width: 390, height: 844 } : { width: 1280, height: 900 } });
+  test('launch activates audible continuous wings and pause/resume retains one context', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    const touchSession = touch ? await page.context().newCDPSession(page) : undefined;
+    await page.addInitScript(({ touch }) => {
+      const NativeContext = window.AudioContext;
+      let gesture = '';
+      for (const name of ['pointerdown', 'touchend', 'click', 'keydown']) {
+        window.addEventListener(name, () => {
+          gesture = name;
+          setTimeout(() => { gesture = ''; }, 0);
+        }, { capture: true });
+      }
+      const analysers: AnalyserNode[] = [];
+      const connect = AudioNode.prototype.connect;
+      AudioNode.prototype.connect = function (this: AudioNode, ...args: [AudioNode | AudioParam, number?, number?]) {
+        if (args[0] === this.context.destination) {
+          const analyser = analysers[window.audioProbe.contexts.indexOf(this.context as AudioContext)];
+          if (analyser) Reflect.apply(connect, this, [analyser]);
+        }
+        return Reflect.apply(connect, this, args);
+      } as typeof connect;
+      window.audioProbe = { contexts: [], resumes: [], oscillators: 0, level() {
+        const analyser = analysers[0];
+        if (!analyser) return 0;
+        const samples = new Float32Array(analyser.fftSize);
+        analyser.getFloatTimeDomainData(samples);
+        return Math.sqrt(samples.reduce((sum, sample) => sum + sample * sample, 0) / samples.length);
+      } };
+      window.AudioContext = class extends NativeContext {
+        constructor(options?: AudioContextOptions) {
+          super(options);
+          window.audioProbe.contexts.push(this);
+          const analyser = this.createAnalyser(); analyser.fftSize = 2048;
+          analysers.push(analyser);
+        }
+        resume() {
+          window.audioProbe.resumes.push(gesture);
+          // Model mobile eligibility explicitly: Chromium otherwise accepts a
+          // touch pointerdown that Safari/other mobile policies may reject.
+          if (touch && !['touchend', 'click', 'keydown'].includes(gesture)) return Promise.reject(new Error('Completed touch gesture required'));
+          return super.resume();
+        }
+        createOscillator() { window.audioProbe.oscillators++; return super.createOscillator(); }
+      };
+    }, { touch });
+    await page.goto('/');
+    const play = page.getByRole('button', { name: 'Play', exact: true });
+    await expect(play).toBeEnabled();
+    expect(await page.evaluate(() => window.audioProbe.contexts.length)).toBe(0);
+    if (touch) await play.tap(); else await play.click();
+    await expect(page.locator('.cloudwake-app')).toHaveAttribute('data-screen', 'playing');
+    await expect.poll(() => page.evaluate(() => window.audioProbe.level())).toBeGreaterThan(.003);
+    const idle = await page.evaluate(() => window.audioProbe.level());
+    const oscillatorCount = await page.evaluate(() => window.audioProbe.oscillators);
+    if (touch) {
+      const rise = page.getByRole('button', { name: 'Hold to rise' });
+      // Check the actual label span too: the old symptom was a copy/select menu.
+      expect(await rise.locator('span').evaluate(element => {
+        const style = getComputedStyle(element);
+        const event = new Event('touchstart', { bubbles: true, cancelable: true });
+        return style.userSelect === 'none' && !element.dispatchEvent(event);
+      })).toBe(true);
+      const box = (await rise.boundingBox())!;
+      await touchSession!.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }] });
+    } else await page.keyboard.down('Space');
+    await expect.poll(() => page.evaluate(() => window.audioProbe.level())).toBeGreaterThan(idle * 1.5);
+    await page.waitForTimeout(650); // Cross the native long-press threshold with a real held touch.
+    expect(await page.evaluate(() => window.audioProbe.oscillators)).toBe(oscillatorCount);
+    expect(await page.evaluate(() => window.getSelection()?.toString())).toBe('');
+    if (touch) await touchSession!.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    else await page.keyboard.up('Space');
+    await page.getByRole('button', { name: 'Pause', exact: true }).click();
+    await expect.poll(() => page.evaluate(() => window.audioProbe.contexts[0].state)).toBe('suspended');
+    const resume = page.getByRole('button', { name: 'Resume', exact: true });
+    if (touch) await resume.tap(); else await resume.click();
+    await expect.poll(() => page.evaluate(() => window.audioProbe.level())).toBeGreaterThan(.003);
+    expect(await page.evaluate(() => window.audioProbe.contexts.length)).toBe(1);
+    expect(await page.evaluate(() => window.audioProbe.resumes)).toEqual(touch ? ['click', 'click'] : ['pointerdown', 'click']);
+    await page.getByRole('button', { name: 'Pause', exact: true }).click();
+    expect(errors).toEqual([]);
+  });
+});
+
 test('standalone artwork retry unlocks flight and pause preserves a resumable run', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));

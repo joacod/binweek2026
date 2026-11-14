@@ -17,6 +17,9 @@ const objects = await Promise.all(crops.map(async (crop, index) => ({
 // Rabas replace the souvenir. The bird has its own stable-body animation strip.
 objects.push({input: await sharp(file('sources/snacks-gull.png')).extract({left:0,top:0,width:627,height:627})
   .resize(448,448).extend({top:32,bottom:32,left:32,right:32,background:'#00000000'}).png().toBuffer(), left:0, top:512});
+objects.push({input: await sharp(file('sources/beer.png'))
+  .resize(448,448,{fit:'contain',background:'#00000000'})
+  .extend({top:32,bottom:32,left:32,right:32,background:'#00000000'}).png().toBuffer(), left:512, top:512});
 await sharp({create:{width:1024,height:1024,channels:4,background:'#00000000'}})
   .composite(objects).webp({lossless:true,effort:6}).toFile(file('objects.webp'));
 const birdCels = [

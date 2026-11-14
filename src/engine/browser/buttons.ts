@@ -13,6 +13,11 @@ export function bindButtons<Action extends string>({ surface, controls, bindings
   const heldKeys = new Set<string>(), pressed = new Set<Action>();
   const pointers = new Map<number, { actions: ReadonlySet<Action>; target: HTMLElement }>();
   const entries = Object.entries(controls) as [Action, HTMLButtonElement][];
+  // iOS can still begin native long-press selection after a prevented pointerdown.
+  // These held game controls own touch gestures, including their label spans.
+  for (const target of [surface, ...Object.values(controls) as HTMLButtonElement[]]) {
+    target.addEventListener('touchstart', event => event.preventDefault(), { passive: false, signal });
+  }
   const down = (action: Action) => [...heldKeys].some(code => keys.get(code) === action) || [...pointers.values()].some(p => p.actions.has(action));
   function reflect() { for (const [action, button] of entries) button.toggleAttribute('data-held', down(action)); }
   function hold(id: number, target: HTMLElement, actions: ReadonlySet<Action>) {

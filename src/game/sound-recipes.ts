@@ -18,12 +18,16 @@ export const binweekRecipes = {
   checkpoint: chime(659.25, .8),
   'shield-ready': chime(987.77, .55),
   'shield-hit': chime(392, .28),
-  thrust: defineSound({ schemaVersion: 1, kind: 'one-shot', duration: .14, layers: [
-    { id: 'wing-air', source: { type: 'noise', color: 'white' }, gainDb: -37,
-      envelope: { attack: .025, decay: .08, sustain: .12, release: .03 },
+  wings: defineSound({ schemaVersion: 1, kind: 'sustained',
+    parameters: { thrust: { min: 0, max: 1, default: 0, mode: 'live', smoothing: .08 } }, layers: [
+    { id: 'wing-air', source: { type: 'noise', color: 'white' },
+      gainDb: { control: 'thrust', range: [-34, -28], scale: 'linear' },
+      envelope: { attack: .06, decay: .08, sustain: .8, release: .1 },
       effects: [{ type: 'filter', filter: 'bandpass', frequency: 900, q: .7 }] },
-    { id: 'wingbeat', source: { type: 'oscillator', waveform: 'sine', frequency: { points: [[0, 175], [.13, 210]], curve: 'linear' } }, gainDb: -39,
-      envelope: { attack: .025, decay: .08, sustain: .1, release: .03 } },
+    { id: 'wingbeat', source: { type: 'oscillator', waveform: 'triangle',
+      frequency: { control: 'thrust', range: [185, 235], scale: 'linear' } },
+      gainDb: { control: 'thrust', range: [-30, -23], scale: 'linear' },
+      envelope: { attack: .06, decay: .08, sustain: .8, release: .1 } },
   ] }),
   crash: defineSound({ schemaVersion: 1, kind: 'one-shot', duration: .55, layers: [
     { id: 'impact', source: { type: 'noise', color: 'white' }, gainDb: -25,

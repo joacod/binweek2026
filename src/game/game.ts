@@ -1,11 +1,12 @@
 import { overlaps, sweptCircle } from '../engine/collision.ts';
 import { flight, fly, multiplierAt, slide, speedAt, fragmentShape, pickupRear, type Flyer } from './content.ts';
-import { touchesFragment } from './collection.ts';
+import { touchesFragment, collectibleCells, type CollectibleCell } from './collection.ts';
 import { createRoute, minePosition, nextPassage, passageCenter, safeGap, journeyLegs, type Passage, type Route } from './route.ts';
 
-export interface Fragment { x: number; y: number; collected: boolean }
+export interface Fragment { x: number; y: number; cell: CollectibleCell; collected: boolean }
 export type FlightEvent = { x: number; y: number } & (
-  { type: 'pickup'; points: number } | { type: 'crash' | 'checkpoint' | 'shield-ready' | 'shield-hit' | 'fragment-missed' | 'victory' }
+  { type: 'pickup'; points: number } | { type: 'fragment-missed'; cell: CollectibleCell }
+  | { type: 'crash' | 'checkpoint' | 'shield-ready' | 'shield-hit' | 'victory' }
 );
 interface Progress {
   elapsed: number; distance: number; speed: number; score: number; player: Flyer;
@@ -35,9 +36,10 @@ function populate(run: Progress) {
   while (run.route.leg < journeyLegs && run.route.previous.x < run.distance + 1800) {
     const passage = nextPassage(run.route);
     run.passages.push(passage);
+    const cells = collectibleCells(run.route.seed);
     // A small arc in the certified corridor rewards deliberate height control.
     for (let i = 0; i < 5; i++) run.fragments.push({ x: passage.x - 100 + i * 42,
-      y: passage.center + Math.sin(i / 4 * Math.PI) * (passage.id % 2 ? 1 : -1) * Math.max(0, Math.min(32, safeGap(passage) / 2 - 65)), collected: false });
+      y: passage.center + Math.sin(i / 4 * Math.PI) * (passage.id % 2 ? 1 : -1) * Math.max(0, Math.min(32, safeGap(passage) / 2 - 65)), cell: cells[i]!, collected: false });
   }
 }
 export function pauseRun(run: Run, paused: boolean) {
@@ -113,7 +115,7 @@ export function stepRun(run: Run, action: { thrust: boolean; strafe?: number; sl
       }
     } else if (fragment.x < missed) {
       run.chain = 0;
-      run.events.push({ type: 'fragment-missed', x: fragment.x, y: fragment.y });
+      run.events.push({ type: 'fragment-missed', x: fragment.x, y: fragment.y, cell: fragment.cell });
     }
   }
   run.score = Math.floor(run.distance / 10) + run.pickupPoints;
