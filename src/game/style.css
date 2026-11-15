@@ -83,15 +83,16 @@
 .cloudwake-app .game-menu h1 { font: 800 clamp(30px,3.3vw,40px)/1.06 'Avenir Next',system-ui,sans-serif; letter-spacing: -.055em; color: #323232; }
 .cloudwake-app .binweek-subtitle { font: italic 21px/1.2 Georgia,serif; color: #9b5f11; margin: 10px 0 0; }
 .cloudwake-app .game-menu-description { color: #58574e; max-width: 36ch; }
+/* The title tagline stays on a single line, scaling down only when the card is too narrow. */
+.cloudwake-app[data-screen='title'] .game-menu-description { max-width: none; font-size: clamp(11px, 3.1vw, 14px); }
 .cloudwake-app .game-menu-actions { background: #f4ead733; border-color: #e5dccb; }
 .cloudwake-app .game-menu button, .cloudwake-app .game-menu-actions button:not(.game-menu-primary) { background: #fffdf8; border-color: #d7cbb5; color: #4a4a4a; box-shadow: none; }
 .cloudwake-app .game-menu button:enabled:hover { background: #f8e4c2; border-color: #b57a2b; color: #323232; box-shadow: none; }
 .cloudwake-app .game-menu-actions .game-menu-primary { background: #F59E2B; color: #323232; border-color: #de8b21; box-shadow: none; }
 .cloudwake-app .game-menu-actions .game-menu-primary:enabled:hover { background: #f8b757; box-shadow: none; }
 .cloudwake-app .game-menu-utilities button { color: #6b6254; font-size: 11px; }
-.cloudwake-app .game-menu-origin, .cloudwake-app .game-menu-origin a { color: #756c5e; }
-.cloudwake-app .game-menu-origin { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
-.cloudwake-app .game-menu-origin .binweek-source { display: inline-flex; flex: none; align-items: center; gap: 6px; color: #323232; font: 600 13px/1 system-ui, sans-serif; text-decoration: none; border-radius: 4px; }
+.cloudwake-app .game-menu-credit .binweek-source { display: inline-flex; flex: none; align-items: center; gap: 6px; color: #323232; font: 600 13px/1 system-ui, sans-serif; text-decoration: none; border-radius: 4px; }
+.cloudwake-app .game-menu-credit .binweek-source:hover { color: #b57a2b; }
 .cloudwake-app .binweek-source svg { display: block; }
 .cloudwake-app .game-menu-controls, .cloudwake-app .game-menu-controls :is(b,h2), .cloudwake-app .menu-readout { color: #4a4a4a; }
 .cloudwake-app .menu-readout { background: #f3ead8; border-color: #e5dccb; box-shadow: none; }
@@ -156,7 +157,6 @@
   .cloudwake-app .game-menu-body { grid-column: 2; padding: 22px 22px 10px 0; }
   .cloudwake-app .game-menu-main { display: block; }
   .cloudwake-app .game-menu-actions { grid-column: 2; grid-row: 2; align-content: start; padding: 10px 22px 18px 0; border: 0; }
-  .cloudwake-app .game-menu-origin { font-size: 10px; }
   .cloudwake-app .game-menu-notices { grid-column: 1 / -1; }
   .cloudwake-app .game-menu-layer[data-settings='true'] .game-menu { display: flex; }
   .cloudwake-app .game-menu-layer[data-settings='true'] .game-menu-header { padding: 14px 22px 4px; }
