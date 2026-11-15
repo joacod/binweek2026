@@ -29,4 +29,4 @@ pnpm dev
 | `src/ui/` | Title menu and flight guide |
 | `src/game/art/` | Illustrations and the script that packs them |
 
-Built by [joacod](https://joacod.com) for Binagora Week 2026. The original flight systems were extracted from [Arcade Lab](https://github.com/joacod/arcade-lab).
+Adapted from the flight game in [Arcade Lab](https://github.com/joacod/arcade-lab)
