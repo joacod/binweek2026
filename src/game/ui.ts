@@ -54,7 +54,7 @@ export function createUI(root: HTMLElement, surface: HTMLElement, signal: AbortS
     controls, launchButtons: menu.actions.filter(button => ['start', 'restart', 'continue'].includes(button.dataset.menuAction!)),
     readiness: menu.readiness, fullscreen: menu.fullscreen, soundStatus: menu.soundStatus, displayStatus: menu.displayStatus,
     show(screen: Screen, focus = true) {
-      menu.description.textContent = screen === 'title' ? 'The hive is gathering at the Hermitage. See you there!'
+      menu.description.textContent = screen === 'title' ? site.introduction
         : screen === 'crashed' ? 'A small detour. Continue from your latest checkpoint with its score, streak and shield.'
         : screen === 'defeat' ? 'The hive will save you a seat. Try the coast again.'
         : screen === 'victory' ? 'The whole hive, together.' : '';

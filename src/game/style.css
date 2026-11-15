@@ -83,6 +83,8 @@
 .cloudwake-app .game-menu h1 { font: 800 clamp(30px,3.3vw,40px)/1.06 'Avenir Next',system-ui,sans-serif; letter-spacing: -.055em; color: #323232; }
 .cloudwake-app .binweek-subtitle { font: italic 21px/1.2 Georgia,serif; color: #9b5f11; margin: 10px 0 0; }
 .cloudwake-app .game-menu-description { color: #58574e; max-width: 36ch; }
+/* The title tagline stays on a single line, scaling down only when the card is too narrow. */
+.cloudwake-app[data-screen='title'] .game-menu-description { max-width: none; font-size: clamp(11px, 3.1vw, 14px); }
 .cloudwake-app .game-menu-actions { background: #f4ead733; border-color: #e5dccb; }
 .cloudwake-app .game-menu button, .cloudwake-app .game-menu-actions button:not(.game-menu-primary) { background: #fffdf8; border-color: #d7cbb5; color: #4a4a4a; box-shadow: none; }
 .cloudwake-app .game-menu button:enabled:hover { background: #f8e4c2; border-color: #b57a2b; color: #323232; box-shadow: none; }
