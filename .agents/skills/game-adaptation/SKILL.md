@@ -33,4 +33,4 @@ Run `pnpm check`. For session, input, menu, readiness or renderer integration ch
 
 ## Origin
 
-This game was extracted from Arcade Lab. The commit, repository, and game path are in the [architecture origin](../../../docs/architecture.md#origin) section. Before porting a later change from that repository, compare it with that commit and copy only behavior this game still wants. This project does not track Arcade Lab. The title-menu credit opens the playable collection at `https://arcade.joacod.com/`. Leave the repository address in the architecture origin section. Remove this note once the games have diverged.
+This game was extracted from Arcade Lab. The commit, repository, and game path are in the [architecture origin](../../../docs/architecture.md#origin) section. Before porting a later change from that repository, compare it with that commit and copy only behavior this game still wants. This project does not track Arcade Lab. Leave the repository address in the architecture origin section. Remove this note once the games have diverged.

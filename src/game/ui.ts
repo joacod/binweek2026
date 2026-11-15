@@ -37,9 +37,6 @@ export function createUI(root: HTMLElement, surface: HTMLElement, signal: AbortS
   const subtitle = document.createElement('p'); subtitle.className = 'binweek-subtitle'; subtitle.textContent = 'The Hive Reunion'; header.append(subtitle);
   const premise = document.createElement('div'); premise.className = 'binweek-premise'; premise.innerHTML = '<span>5 coastal stops <i aria-hidden="true">·</i> a 2-minute escape</span><p><kbd>Hold</kbd> to rise. Release to fall.<br><small>A / D, arrows or drag to slide.</small></p>';
   results.element.before(premise);
-  const origin = menu.layer.querySelector('.game-menu-origin')!;
-  const credit = document.createElement('span');
-  credit.append(...origin.childNodes);
   const source = document.createElement('a');
   source.className = 'binweek-source';
   source.href = site.repository;
@@ -47,7 +44,7 @@ export function createUI(root: HTMLElement, surface: HTMLElement, signal: AbortS
   source.rel = 'noopener noreferrer';
   source.title = 'View the source on GitHub (opens in a new tab)';
   source.innerHTML = `${github}<span>GitHub</span>${externalLink}`;
-  origin.replaceChildren(credit, source);
+  menu.layer.querySelector('.game-menu-credit')!.append(source);
   menu.layer.querySelector('.game-menu-notices')!.prepend(assetStatus);
   return {
     artworkStatus(message: string) { assetStatus.textContent = message; assetStatus.hidden = !message; },
