@@ -102,7 +102,7 @@ export function mountBinweek(container: HTMLElement, fullscreen: FullscreenContr
       shouldSuspend: () => screen === 'playing' && document.activeElement !== host.surface
         && !(document.activeElement instanceof HTMLElement && document.activeElement.dataset.control !== undefined) });
     bindPageLifetime({ signal: host.signal, suspend, resetTiming: () => clock.reset(), dispose });
-    ui.update(run); ui.show('title'); ui.fullscreen(host.fullscreenAvailable, host.fullscreen);
+    ui.update(run); ui.show('title', false); ui.fullscreen(host.fullscreenAvailable, host.fullscreen);
     host.start(now => {
       if (!readiness.ready) return;
       if (screen === 'playing') {

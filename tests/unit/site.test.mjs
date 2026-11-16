@@ -22,6 +22,9 @@ test('link previews receive the game identity before JavaScript runs', async () 
   assert.match(html, /"@type":"WebSite"/);
   assert.match(html, new RegExp(`"sameAs":"${quoted(site.repository)}"`));
   assert.match(html, new RegExp(quoted(site.introduction)));
+  assert.match(html, new RegExp(`<h1>${quoted(site.name)}</h1>`));
+  assert.match(html, /class="binweek-introduction-card"/);
+  assert.match(html, /Loading the coast/);
   assert.doesNotMatch(html, /<!--site-metadata-->|<!--game-introduction-->/);
 
   await generateSiteAssets();
