@@ -3,11 +3,13 @@ import { createFullscreen } from './engine/browser/fullscreen.ts';
 import './style.css';
 
 const root = document.querySelector<HTMLElement>('#app')!;
-// The static introduction is for link crawlers. The mounted game replaces it.
-root.replaceChildren();
+// The static introduction is a branded loading screen for crawlers and the
+// pre-JS paint. The mounted game replaces it before the next frame.
+const introduction = root.querySelector<HTMLElement>('.binweek-introduction');
 const fullscreen = createFullscreen(root);
 try {
   const session = mountBinweek(root, fullscreen);
+  introduction?.remove();
   if (import.meta.hot) import.meta.hot.dispose(() => session.dispose());
 } catch (error) {
   console.error('Could not start Binagora Week 2026', error);

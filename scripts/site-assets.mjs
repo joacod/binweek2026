@@ -48,7 +48,7 @@ export async function generateSiteAssets() {
   ]);
 }
 
-/** Search and link previews receive metadata in the initial HTML, without JavaScript. */
+/** Search and link previews receive metadata plus a self-contained loading introduction, without JavaScript. */
 export function siteHtml(html) {
   const schema = { '@context': 'https://schema.org', '@type': 'WebSite', name: site.name, url: site.url,
     description: site.description, sameAs: site.repository };
@@ -65,6 +65,6 @@ export function siteHtml(html) {
     }).map(([name, value]) => `<meta name="${name}" content="${escape(value)}">`),
     `<script type="application/ld+json">${JSON.stringify(schema).replaceAll('<', '\\u003c')}</script>`,
   ].join('\n    ');
-  const introduction = `<main class="binweek-introduction"><p class="binweek-introduction-place">Mar del Plata, Argentina</p><h1>${escape(site.headline)}</h1><p>${escape(site.introduction)}</p><p>${escape(site.socialDescription)}</p><noscript><p>Enable JavaScript to play.</p></noscript></main>`;
+  const introduction = `<main class="binweek-introduction"><div class="binweek-introduction-card"><p class="binweek-introduction-place">Mar del Plata, Argentina</p><h1>${escape(site.name)}</h1><p class="binweek-introduction-subtitle">${escape(site.headline)}</p><div class="binweek-introduction-copy"><p>${escape(site.introduction)}</p><p>${escape(site.socialDescription)}</p><noscript><p>Enable JavaScript to play.</p></noscript></div><p class="binweek-introduction-status">Loading the coast…</p></div></main>`;
   return html.replace('<!--site-metadata-->', metadata).replace('<!--game-introduction-->', introduction);
 }
